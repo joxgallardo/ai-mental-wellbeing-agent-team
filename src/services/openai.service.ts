@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
-import { config } from '../config';
-import { AgentError } from '../types';
+import { config } from '../config/index';
+import { AgentError } from '../types/index';
 import { logger } from '../utils/logger';
 
 export class OpenAIService {

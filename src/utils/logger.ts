@@ -1,6 +1,5 @@
 import winston from 'winston';
-import { loggingConfig } from '../config';
-import { LogEntry } from '../types';
+import { loggingConfig } from '../config/index';
 
 // Custom format for development
 const developmentFormat = winston.format.combine(
@@ -31,12 +30,12 @@ export const logger = winston.createLogger({
       filename: 'logs/error.log',
       level: 'error',
       maxsize: 5242880, // 5MB
-      maxFiles: 5,
+      maxFiles: 3,
     }),
     new winston.transports.File({
       filename: 'logs/combined.log',
       maxsize: 5242880, // 5MB
-      maxFiles: 5,
+      maxFiles: 3,
     }),
   ],
   exceptionHandlers: [
@@ -47,51 +46,14 @@ export const logger = winston.createLogger({
   ],
 });
 
-// Custom logger methods for structured logging
-export const createLogger = (context: string) => ({
-  info: (message: string, meta?: Record<string, any>) => {
-    logger.info(message, { context, ...meta });
-  },
-  warn: (message: string, meta?: Record<string, any>) => {
-    logger.warn(message, { context, ...meta });
-  },
-  error: (message: string, meta?: Record<string, any>) => {
-    logger.error(message, { context, ...meta });
-  },
-  debug: (message: string, meta?: Record<string, any>) => {
-    logger.debug(message, { context, ...meta });
-  },
-});
-
-// Log entry helper
-export const logEntry = (entry: LogEntry): void => {
-  const { level, message, timestamp, agentName, sessionId, metadata } = entry;
-  
-  logger.log(level, message, {
-    timestamp,
-    agentName,
-    sessionId,
-    ...metadata,
+// Helper function to create logger for specific modules
+export const createLogger = (moduleName: string) => {
+  return winston.createLogger({
+    level: loggingConfig.level,
+    format: loggingConfig.format === 'json' ? productionFormat : developmentFormat,
+    defaultMeta: { module: moduleName },
+    transports: [
+      new winston.transports.Console(),
+    ],
   });
-};
-
-// Performance logging
-export const logPerformance = (operation: string, duration: number, meta?: Record<string, any>): void => {
-  logger.info(`Performance: ${operation}`, {
-    operation,
-    duration,
-    unit: 'ms',
-    ...meta,
-  });
-};
-
-// Security logging
-export const logSecurity = (event: string, details: Record<string, any>): void => {
-  logger.warn(`Security event: ${event}`, {
-    event,
-    ...details,
-    timestamp: new Date().toISOString(),
-  });
-};
-
-export default logger; 
+}; 

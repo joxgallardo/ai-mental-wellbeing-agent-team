@@ -86,35 +86,31 @@ export interface SystemConfig {
   timeout: number;
 }
 
-// Session management
-export interface Session {
-  id: string;
-  userId?: string;
-  userInput: UserInput;
-  responses: AgentResponse[];
-  createdAt: Date;
-  updatedAt: Date;
-  status: 'active' | 'completed' | 'archived';
-}
-
 // Error types
 export class AgentError extends Error {
+  public source: string | undefined;
+  public code: string | undefined;
+  public details?: unknown;
+
   constructor(
     message: string,
-    public agentName: string,
-    public code: string,
-    public details?: any
+    source?: string,
+    code?: string,
+    details?: unknown
   ) {
     super(message);
     this.name = 'AgentError';
+    this.source = source;
+    this.code = code;
+    this.details = details;
   }
 }
 
 export class ValidationError extends Error {
   constructor(
     message: string,
-    public field: string,
-    public value: any
+    public field?: string,
+    public value?: any
   ) {
     super(message);
     this.name = 'ValidationError';
@@ -143,14 +139,4 @@ export interface MentalHealthPlan {
     immediateNextSteps: string[];
     longTermGoals: string[];
   };
-}
-
-// Logging types
-export interface LogEntry {
-  level: 'info' | 'warn' | 'error' | 'debug';
-  message: string;
-  timestamp: Date;
-  agentName?: string;
-  sessionId?: string;
-  metadata?: Record<string, any>;
 } 

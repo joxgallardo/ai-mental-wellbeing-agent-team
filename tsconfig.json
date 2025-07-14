@@ -1,7 +1,10 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "commonjs",
+    "module": "ES2022",
+    "moduleResolution": "node",
+    "allowImportingTsExtensions": false,
+    "moduleDetection": "force",
     "lib": ["ES2022"],
     "outDir": "./dist",
     "rootDir": "./src",
@@ -25,6 +28,10 @@
     "noUncheckedIndexedAccess": true,
     "allowUnusedLabels": false,
     "allowUnreachableCode": false
+  },
+  "ts-node": {
+    "esm": true,
+    "experimentalSpecifierResolution": "node"
   },
   "include": [
     "src/**/*"

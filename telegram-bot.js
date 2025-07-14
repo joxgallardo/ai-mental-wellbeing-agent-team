@@ -1,6 +1,8 @@
-const TelegramBot = require('node-telegram-bot-api');
-const axios = require('axios');
-require('dotenv').config();
+import TelegramBot from 'node-telegram-bot-api';
+import axios from 'axios';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 // Configuración del bot
 const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -288,6 +290,4 @@ bot.on('polling_error', (error) => {
 });
 
 console.log('✅ Bot listo para recibir mensajes');
-console.log('📱 Envía /start a tu bot para comenzar');
-
-module.exports = bot; 
+console.log('📱 Envía /start a tu bot para comenzar'); 

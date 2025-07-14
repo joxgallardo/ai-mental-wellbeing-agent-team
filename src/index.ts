@@ -1,12 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import compression from 'compression';
-import { RateLimiterMemory } from 'rate-limiter-flexible';
-import { v4 as uuidv4 } from 'uuid';
-import { serverConfig } from './config';
+import { serverConfig } from './config/index';
 import { agentCoordinator } from './services/agent-coordinator.service';
-import { UserInput, ApiResponse, MentalHealthPlan, AgentError, ValidationError, UserInputSchema } from './types';
+import { UserInput, ApiResponse, MentalHealthPlan, AgentError, ValidationError, UserInputSchema } from './types/index';
 import { logger } from './utils/logger';
 
 // Create Express app
@@ -14,7 +11,6 @@ const app = express();
 
 // Security middleware
 app.use(helmet());
-app.use(compression());
 
 // CORS configuration
 app.use(cors({
@@ -26,21 +22,20 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Rate limiting
-const rateLimiter = new RateLimiterMemory({
-  points: serverConfig.rateLimit.max,
-  duration: serverConfig.rateLimit.windowMs / 1000,
-});
+// Simple rate limiting middleware
+const requestCounts = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
+const RATE_LIMIT_MAX = 100;
 
-// Middleware para limitar por IP
-app.use(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-  // Asegura que siempre haya una IP (usa 'unknown' si no hay)
+app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
   const ip = req.ip || req.connection?.remoteAddress || 'unknown';
-  try {
-    await rateLimiter.consume(ip);
-    next();
-  } catch (rejRes) {
-    res.status(429).json({
+  const now = Date.now();
+  
+  const userRequests = requestCounts.get(ip);
+  if (!userRequests || now > userRequests.resetTime) {
+    requestCounts.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+  } else if (userRequests.count >= RATE_LIMIT_MAX) {
+    return res.status(429).json({
       success: false,
       error: {
         message: 'Too many requests',
@@ -48,7 +43,11 @@ app.use(async (req: express.Request, res: express.Response, next: express.NextFu
       },
       timestamp: new Date(),
     });
+  } else {
+    userRequests.count++;
   }
+  
+  return next();
 });
 
 // Health check endpoint
@@ -91,7 +90,7 @@ app.get('/agents/status', (_req: express.Request, res: express.Response) => {
 
 // Main endpoint for generating mental health plans
 app.post('/api/mental-health-plan', async (req: express.Request, res: express.Response) => {
-  const sessionId = uuidv4();
+  const sessionId = crypto.randomUUID();
   const startTime = Date.now();
 
   try {
@@ -167,7 +166,7 @@ app.post('/api/mental-health-plan', async (req: express.Request, res: express.Re
     } else if (error instanceof AgentError) {
       statusCode = 422;
       errorMessage = error.message;
-      errorCode = error.code;
+      errorCode = error.code || 'INTERNAL_ERROR';
     }
 
     const errorResponse: ApiResponse<null> = {

@@ -1,4 +1,4 @@
-import { Agent, AgentContext, AgentResponse, UserInput } from '../types';
+import { Agent, AgentContext, AgentResponse, UserInput } from '../types/index';
 import { openAIService } from '../services/openai.service';
 import { createLogger } from '../utils/logger';
 
@@ -88,8 +88,7 @@ ${context.previousResponses.map((response, index) =>
 
   protected createBaseResponse(
     content: string,
-    recommendations: string[],
-    _context?: AgentContext
+    recommendations: string[]
   ): AgentResponse {
     return {
       agentName: this.name,

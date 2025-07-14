@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import { z } from 'zod';
-import { SystemConfig } from '../types';
+import { SystemConfig } from '../types/index';
 
 // Load environment variables
 dotenv.config();
@@ -16,12 +16,10 @@ const EnvironmentSchema = z.object({
   OPENAI_TIMEOUT: z.string().transform(Number).default('30000'),
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
   CORS_ORIGIN: z.string().default('*'),
-  RATE_LIMIT_WINDOW: z.string().transform(Number).default('900000'), // 15 minutes
-  RATE_LIMIT_MAX_REQUESTS: z.string().transform(Number).default('100'),
 });
 
 // Validate environment variables
-const env = EnvironmentSchema.parse(process.env);
+const env = EnvironmentSchema.parse(process.env as Record<string, string>);
 
 // System configuration
 export const config: SystemConfig = {
@@ -37,10 +35,6 @@ export const serverConfig = {
   port: env.PORT,
   nodeEnv: env.NODE_ENV,
   corsOrigin: env.CORS_ORIGIN,
-  rateLimit: {
-    windowMs: env.RATE_LIMIT_WINDOW,
-    max: env.RATE_LIMIT_MAX_REQUESTS,
-  },
 };
 
 // Logging configuration

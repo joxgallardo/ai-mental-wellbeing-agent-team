@@ -1,6 +1,6 @@
 import { BaseAgent } from './base-agent';
-import { AssessmentResponse, AgentContext, UserInput } from '../types';
-import { agentSystemMessages } from '../config';
+import { AssessmentResponse, AgentContext, UserInput } from '../types/index';
+import { agentSystemMessages } from '../config/index';
 
 export class AssessmentAgent extends BaseAgent {
   constructor() {
@@ -23,8 +23,7 @@ export class AssessmentAgent extends BaseAgent {
       const response: AssessmentResponse = {
         ...this.createBaseResponse(
           parsedResponse.content || aiResponse,
-          parsedResponse.recommendations || this.extractRecommendations(aiResponse),
-          context
+          parsedResponse.recommendations || this.extractRecommendations(aiResponse)
         ),
         emotionalAnalysis: {
           primaryEmotions: parsedResponse.emotionalAnalysis?.primaryEmotions || this.extractEmotions(aiResponse),

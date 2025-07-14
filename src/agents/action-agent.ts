@@ -1,6 +1,6 @@
 import { BaseAgent } from './base-agent';
-import { ActionResponse, AgentContext, UserInput } from '../types';
-import { agentSystemMessages, crisisResources } from '../config';
+import { ActionResponse, AgentContext, UserInput } from '../types/index';
+import { agentSystemMessages, crisisResources } from '../config/index';
 
 export class ActionAgent extends BaseAgent {
   constructor() {
@@ -23,10 +23,9 @@ export class ActionAgent extends BaseAgent {
       const response: ActionResponse = {
         ...this.createBaseResponse(
           parsedResponse.content || aiResponse,
-          parsedResponse.recommendations || this.extractRecommendations(aiResponse),
-          context
+          parsedResponse.recommendations || this.extractRecommendations(aiResponse)
         ),
-        immediateActions: parsedResponse.immediateActions || this.generateImmediateActions(input, aiResponse),
+        immediateActions: parsedResponse.immediateActions || this.generateImmediateActions(input),
         resources: parsedResponse.resources || this.generateResources(input, aiResponse),
         urgency: parsedResponse.urgency || this.determineUrgency(aiResponse),
       };
@@ -71,7 +70,7 @@ export class ActionAgent extends BaseAgent {
     }
   }
 
-  private generateImmediateActions(input: UserInput, _content: string): ActionResponse['immediateActions'] {
+  private generateImmediateActions(input: UserInput): ActionResponse['immediateActions'] {
     const actions: ActionResponse['immediateActions'] = [];
 
     // High stress level actions

@@ -7,11 +7,10 @@ import {
   ActionResponse, 
   FollowUpResponse, 
   MentalHealthPlan,
-  Session,
   AgentError 
-} from '../types';
+} from '../types/index';
 import { createLogger } from '../utils/logger';
-import { UserInputSchema } from '../types';
+import { UserInputSchema } from '../types/index';
 
 export class AgentCoordinatorService {
   private readonly assessmentAgent: AssessmentAgent;
@@ -35,25 +34,12 @@ export class AgentCoordinatorService {
       // Validate user input
       const validatedInput = UserInputSchema.parse(userInput);
 
-      // Create session context
-      const session: Session = {
-        id: sessionId,
-        userInput: validatedInput,
-        responses: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        status: 'active',
-      };
-
       // Step 1: Assessment
       this.logger.info('Starting assessment phase', { sessionId });
       const assessment = await this.assessmentAgent.process(validatedInput, {
         sessionId,
         userInput: validatedInput,
       });
-
-      session.responses.push(assessment);
-      session.updatedAt = new Date();
 
       // Step 2: Action Plan
       this.logger.info('Starting action plan phase', { sessionId });
@@ -63,9 +49,6 @@ export class AgentCoordinatorService {
         previousResponses: [assessment],
       });
 
-      session.responses.push(actionPlan);
-      session.updatedAt = new Date();
-
       // Step 3: Follow-up Strategy
       this.logger.info('Starting follow-up strategy phase', { sessionId });
       const followUp = await this.followUpAgent.process(validatedInput, {
@@ -73,10 +56,6 @@ export class AgentCoordinatorService {
         userInput: validatedInput,
         previousResponses: [assessment, actionPlan],
       });
-
-      session.responses.push(followUp);
-      session.status = 'completed';
-      session.updatedAt = new Date();
 
       // Generate summary
       const summary = this.generateSummary(assessment, actionPlan, followUp);

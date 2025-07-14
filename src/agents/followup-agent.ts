@@ -1,6 +1,6 @@
 import { BaseAgent } from './base-agent';
-import { FollowUpResponse, AgentContext, UserInput } from '../types';
-import { agentSystemMessages } from '../config';
+import { FollowUpResponse, AgentContext, UserInput } from '../types/index';
+import { agentSystemMessages } from '../config/index';
 
 export class FollowUpAgent extends BaseAgent {
   constructor() {
@@ -23,8 +23,7 @@ export class FollowUpAgent extends BaseAgent {
       const response: FollowUpResponse = {
         ...this.createBaseResponse(
           parsedResponse.content || aiResponse,
-          parsedResponse.recommendations || this.extractRecommendations(aiResponse),
-          context
+          parsedResponse.recommendations || this.extractRecommendations(aiResponse)
         ),
         longTermStrategies: parsedResponse.longTermStrategies || this.generateLongTermStrategies(input, aiResponse),
         monitoringPlan: parsedResponse.monitoringPlan || this.generateMonitoringPlan(input, aiResponse),
