@@ -1,0 +1,189 @@
+# Life Coaching Domain Configuration
+# Template configuration for life coaching domain
+
+name: "life_coaching"
+display_name: "Life Coaching"
+description: "Personal development and life goal achievement coaching"
+
+# Knowledge Sources Configuration
+knowledge_sources:
+  - "methodologies"
+  - "best_practices"
+  - "resources"
+  - "templates"
+
+# Supported Methodologies
+methodologies:
+  - "GROW Model"
+  - "Values Clarification"
+  - "Life Wheel Assessment"
+  - "Solution-Focused Coaching"
+  - "Appreciative Inquiry"
+  - "Cognitive Behavioral Coaching"
+  - "Mindfulness-Based Coaching"
+
+# Assessment Frameworks
+assessment_frameworks:
+  - name: "Goal Clarity Assessment"
+    description: "Evaluate specificity and achievability of goals"
+    scoring: "1-10 scale"
+    dimensions: ["specificity", "measurability", "achievability", "relevance", "timeline"]
+    
+  - name: "Values Assessment"
+    description: "Identify core personal values"
+    method: "values_card_sort"
+    top_values_count: 5
+    categories: ["achievement", "relationships", "security", "creativity", "service"]
+    
+  - name: "Life Satisfaction Scale"
+    description: "Assess satisfaction across life domains"
+    scoring: "1-10 scale"
+    domains: ["career", "relationships", "health", "personal_growth", "finances", "recreation"]
+    
+  - name: "Readiness for Change"
+    description: "Evaluate readiness to make life changes"
+    model: "transtheoretical_model"
+    stages: ["precontemplation", "contemplation", "preparation", "action", "maintenance"]
+
+# Retrieval Preferences (weights for combining results)
+retrieval_preferences:
+  methodology_weight: 0.4
+  best_practices_weight: 0.3
+  resources_weight: 0.2
+  templates_weight: 0.1
+
+# Metadata Schema for Life Coaching Content
+metadata_schema:
+  methodology:
+    type: "string"
+    required: true
+    description: "Primary coaching methodology used"
+    values: ["GROW Model", "Values Clarification", "Life Wheel", "Solution-Focused", "Appreciative Inquiry"]
+    
+  life_area:
+    type: "string"
+    required: false
+    description: "Primary life area focus"
+    values: ["relationships", "career", "health", "personal_growth", "finances", "spirituality", "recreation", "environment"]
+    
+  complexity_level:
+    type: "string"
+    required: true
+    description: "Complexity level of content"
+    values: ["beginner", "intermediate", "advanced"]
+    default: "intermediate"
+    
+  evidence_level:
+    type: "string"
+    required: true
+    description: "Level of evidence supporting content"
+    values: ["research-based", "expert-validated", "practical", "theoretical"]
+    
+  target_audience:
+    type: "string"
+    required: false
+    description: "Intended audience for content"
+    values: ["clients", "coaches", "both"]
+    default: "both"
+    
+  goal_type:
+    type: "string"
+    required: false
+    description: "Type of goals addressed"
+    values: ["short-term", "long-term", "life-changing", "skill-building", "relationship", "career"]
+    
+  intervention_type:
+    type: "string"
+    required: false
+    description: "Type of coaching intervention"
+    values: ["assessment", "planning", "skill-building", "reflection", "action-oriented"]
+
+# Domain-Specific Query Enhancement
+query_enhancement:
+  keywords:
+    personal_development: ["growth", "improvement", "development", "progress"]
+    goal_setting: ["goals", "objectives", "targets", "aims", "aspirations"]
+    life_balance: ["balance", "harmony", "integration", "wellness"]
+    values_alignment: ["values", "meaning", "purpose", "authentic"]
+    
+  context_mapping:
+    career_goals: "professional development and career advancement"
+    relationship_goals: "interpersonal skills and relationship building"
+    health_goals: "wellness and healthy lifestyle habits"
+    personal_growth: "self-awareness and personal development"
+
+# Content Filtering Rules
+filtering_rules:
+  minimum_relevance_score: 0.6
+  boost_factors:
+    methodology_match: 1.2
+    life_area_match: 1.15
+    evidence_level_high: 1.1
+    complexity_match: 1.05
+    
+  penalty_factors:
+    complexity_mismatch: 0.9
+    outdated_content: 0.8
+
+# Personalization Settings
+personalization:
+  methodology_preference_weight: 0.3
+  complexity_preference_weight: 0.2
+  goal_alignment_weight: 0.25
+  historical_preference_weight: 0.15
+  experience_level_weight: 0.1
+  
+  learning_factors:
+    session_rating_influence: 0.4
+    content_engagement_influence: 0.3
+    goal_achievement_influence: 0.3
+
+# Resource Categories
+resource_categories:
+  apps:
+    description: "Mobile and web applications for life coaching"
+    examples: ["goal tracking", "habit formation", "mindfulness", "journaling"]
+    
+  books:
+    description: "Recommended reading for personal development"
+    categories: ["self-help", "psychology", "coaching", "productivity"]
+    
+  exercises:
+    description: "Practical exercises and activities"
+    types: ["reflection", "goal-setting", "values", "assessment"]
+    
+  communities:
+    description: "Support groups and communities"
+    types: ["online", "local", "professional", "peer"]
+    
+  tools:
+    description: "Practical tools and templates"
+    types: ["worksheets", "assessments", "planners", "trackers"]
+
+# Domain-Specific Escalation Triggers
+escalation_triggers:
+  - "mental_health_concerns"
+  - "relationship_violence"
+  - "substance_abuse_indicators"
+  - "financial_crisis_beyond_coaching"
+  - "legal_issues"
+  - "medical_concerns"
+  - "severe_depression_symptoms"
+  - "anxiety_disorder_indicators"
+
+# Integration Settings
+integrations:
+  calendar_apps: ["google_calendar", "outlook", "apple_calendar"]
+  goal_tracking: ["todoist", "notion", "trello"]
+  journaling_apps: ["day_one", "journey", "penzu"]
+  mindfulness_apps: ["headspace", "calm", "insight_timer"]
+
+# Template Validation Rules
+validation:
+  required_methodologies: 3  # Minimum methodologies required
+  required_resources: 10     # Minimum resources per category
+  content_quality_threshold: 0.8
+  evidence_level_distribution:
+    research_based: 0.3      # 30% should be research-based
+    expert_validated: 0.4    # 40% expert-validated
+    practical: 0.3           # 30% practical experience
