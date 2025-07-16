@@ -1,14 +1,121 @@
-import { BaseAgent } from './base-agent';
+import { EnhancedBaseAgent } from './enhanced-base-agent';
 import { ActionResponse, AgentContext, UserInput } from '../types/index';
 import { agentSystemMessages, crisisResources } from '../config/index';
 
-export class ActionAgent extends BaseAgent {
+export class ActionAgent extends EnhancedBaseAgent {
   constructor() {
     super(
       'action_agent',
       'Crisis Intervention and Resource Specialist',
-      agentSystemMessages.action
+      agentSystemMessages.action,
+      { 
+        ragEnabled: true, 
+        hybridSearchEnabled: true,
+        focusArea: 'intervention',
+        domainSpecific: true 
+      }
     );
+  }
+
+  /**
+   * Customize RAG context for action-specific needs
+   */
+  protected customizeRAGContext(ragContext: any, input: UserInput, context?: AgentContext): any {
+    const urgencyLevel = this.determineInitialUrgency(input);
+    const interventionType = this.detectInterventionType(input);
+    
+    return {
+      ...ragContext,
+      preferredCategories: ['best_practices', 'interventions', 'resources', 'crisis_management'],
+      focusAreas: ['immediate_actions', 'crisis_intervention', 'resource_recommendations'],
+      complexityLevel: urgencyLevel === 'high' ? 'advanced' : 'intermediate',
+      interventionType,
+      urgencyLevel,
+      timeframe: 'immediate',
+      evidenceLevel: 'practice-based',
+    };
+  }
+
+  /**
+   * Filter knowledge specifically for action/intervention role
+   */
+  protected filterKnowledgeForRole(knowledgeResults: any[], ragContext: any): any[] {
+    return knowledgeResults.filter(result => {
+      const content = result.content.toLowerCase();
+      const category = result.document?.category || '';
+      
+      // Prioritize action-oriented content
+      return (
+        category === 'best_practices' ||
+        category === 'interventions' ||
+        category === 'crisis_management' ||
+        content.includes('action') ||
+        content.includes('intervention') ||
+        content.includes('strategy') ||
+        content.includes('technique') ||
+        content.includes('immediate') ||
+        content.includes('crisis') ||
+        content.includes('emergency') ||
+        content.includes('resource') ||
+        content.includes('coping') ||
+        content.includes('support')
+      );
+    }).slice(0, 10); // More results for comprehensive action planning
+  }
+
+  /**
+   * Detect the type of intervention needed
+   */
+  private detectInterventionType(input: UserInput): string {
+    const content = input.mentalState.toLowerCase();
+    const symptoms = input.currentSymptoms.map(s => s.toLowerCase());
+    
+    // Crisis intervention
+    const crisisIndicators = ['suicide', 'self-harm', 'crisis', 'emergency'];
+    if (crisisIndicators.some(indicator => content.includes(indicator))) {
+      return 'crisis_intervention';
+    }
+    
+    // Anxiety management
+    if (symptoms.some(s => s.includes('anxiety') || s.includes('panic'))) {
+      return 'anxiety_management';
+    }
+    
+    // Depression support
+    if (symptoms.some(s => s.includes('depression') || s.includes('mood'))) {
+      return 'depression_support';
+    }
+    
+    // Stress management
+    if (input.stressLevel >= 7) {
+      return 'stress_management';
+    }
+    
+    // Sleep intervention
+    if (input.sleepPattern <= 5) {
+      return 'sleep_intervention';
+    }
+    
+    return 'general_support';
+  }
+
+  /**
+   * Determine initial urgency level for RAG context
+   */
+  private determineInitialUrgency(input: UserInput): string {
+    const content = input.mentalState.toLowerCase();
+    const crisisIndicators = [
+      'suicide', 'self-harm', 'kill myself', 'end it all',
+      'crisis', 'emergency', 'immediate help'
+    ];
+    
+    if (crisisIndicators.some(indicator => content.includes(indicator))) {
+      return 'high';
+    }
+    if (input.stressLevel >= 8 || input.sleepPattern <= 4) {
+      return 'medium';
+    }
+    return 'low';
   }
 
   async process(input: UserInput, context?: AgentContext): Promise<ActionResponse> {

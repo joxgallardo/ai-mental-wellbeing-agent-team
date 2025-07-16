@@ -1,0 +1,114 @@
+# Production Dockerfile for Mental Health AI Agent
+# Multi-stage build for optimized production image
+
+# Stage 1: Build Environment
+FROM node:18-alpine AS builder
+
+# Set working directory
+WORKDIR /app
+
+# Install build dependencies
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    git \
+    curl
+
+# Copy package files
+COPY package*.json ./
+COPY tsconfig*.json ./
+
+# Install dependencies
+RUN npm ci --only=production && npm cache clean --force
+
+# Copy source code
+COPY src/ ./src/
+COPY config/ ./config/
+
+# Build TypeScript
+RUN npm run build
+
+# Remove dev dependencies and clean up
+RUN npm prune --production && \
+    rm -rf src/ tsconfig*.json && \
+    rm -rf /root/.npm /tmp/*
+
+# Stage 2: Production Runtime
+FROM node:18-alpine AS production
+
+# Set production environment
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV METRICS_PORT=9090
+
+# Create app user for security
+RUN addgroup -g 1001 -S appgroup && \
+    adduser -S appuser -u 1001 -G appgroup
+
+# Install runtime dependencies
+RUN apk add --no-cache \
+    curl \
+    dumb-init \
+    tini && \
+    rm -rf /var/cache/apk/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy built application from builder stage
+COPY --from=builder --chown=appuser:appgroup /app/node_modules ./node_modules/
+COPY --from=builder --chown=appuser:appgroup /app/dist ./dist/
+COPY --from=builder --chown=appuser:appgroup /app/package*.json ./
+
+# Copy configuration files
+COPY --chown=appuser:appgroup config/ ./config/
+
+# Create necessary directories
+RUN mkdir -p /var/log/mental-health-ai /app/data && \
+    chown -R appuser:appgroup /var/log/mental-health-ai /app/data
+
+# Create health check script
+COPY --chown=appuser:appgroup <<EOF /app/healthcheck.sh
+#!/bin/sh
+set -e
+
+# Check main application health
+curl -f http://localhost:\${PORT:-3000}/health || exit 1
+
+# Check metrics endpoint
+curl -f http://localhost:\${METRICS_PORT:-9090}/metrics || exit 1
+
+echo "Health check passed"
+EOF
+
+RUN chmod +x /app/healthcheck.sh
+
+# Switch to non-root user
+USER appuser
+
+# Expose ports
+EXPOSE 3000 9090
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD /app/healthcheck.sh
+
+# Volume for persistent data
+VOLUME ["/app/data", "/var/log/mental-health-ai"]
+
+# Use tini as init system for proper signal handling
+ENTRYPOINT ["tini", "--"]
+
+# Start application
+CMD ["node", "dist/index.js"]
+
+# Labels for metadata
+LABEL maintainer="Mental Health AI Team" \
+      version="1.0.0" \
+      description="Mental Health AI Agent with RAG Enhancement" \
+      org.opencontainers.image.source="https://github.com/mental-health-ai/agent" \
+      org.opencontainers.image.version="1.0.0" \
+      org.opencontainers.image.created="2024-12-15" \
+      org.opencontainers.image.title="Mental Health AI Agent" \
+      org.opencontainers.image.description="AI-powered mental health support with RAG enhancement and LangGraph workflows"

@@ -1,14 +1,108 @@
-import { BaseAgent } from './base-agent';
+import { EnhancedBaseAgent } from './enhanced-base-agent';
 import { AssessmentResponse, AgentContext, UserInput } from '../types/index';
 import { agentSystemMessages } from '../config/index';
 
-export class AssessmentAgent extends BaseAgent {
+export class AssessmentAgent extends EnhancedBaseAgent {
   constructor() {
     super(
       'assessment_agent',
       'Mental Health Assessment Specialist',
-      agentSystemMessages.assessment
+      agentSystemMessages.assessment,
+      { 
+        ragEnabled: true, 
+        hybridSearchEnabled: true,
+        focusArea: 'assessment',
+        domainSpecific: true 
+      }
     );
+  }
+
+  /**
+   * Customize RAG context for assessment-specific needs
+   */
+  protected customizeRAGContext(ragContext: any, input: UserInput, context?: AgentContext): any {
+    return {
+      ...ragContext,
+      preferredCategories: ['assessment_tools', 'risk_evaluation', 'methodologies'],
+      focusAreas: ['mental_health_assessment', 'risk_factors', 'protective_factors'],
+      complexityLevel: 'intermediate',
+      assessmentType: this.detectAssessmentType(input),
+      riskLevel: this.determineInitialRiskLevel(input),
+      emotionalContext: this.extractEmotionalContext(input),
+    };
+  }
+
+  /**
+   * Filter knowledge specifically for assessment role
+   */
+  protected filterKnowledgeForRole(knowledgeResults: any[], ragContext: any): any[] {
+    return knowledgeResults.filter(result => {
+      const content = result.content.toLowerCase();
+      const category = result.document?.category || '';
+      
+      // Prioritize assessment-specific content
+      return (
+        category === 'assessment_tools' ||
+        category === 'methodologies' ||
+        content.includes('assessment') ||
+        content.includes('evaluation') ||
+        content.includes('risk') ||
+        content.includes('screening') ||
+        content.includes('protective factors') ||
+        content.includes('mental health indicators') ||
+        content.includes('emotional analysis')
+      );
+    }).slice(0, 8); // Limit to most relevant results
+  }
+
+  /**
+   * Detect the type of assessment needed
+   */
+  private detectAssessmentType(input: UserInput): string {
+    const content = input.mentalState.toLowerCase();
+    const symptoms = input.currentSymptoms.map(s => s.toLowerCase());
+    
+    if (symptoms.some(s => s.includes('depression') || s.includes('mood'))) {
+      return 'mood_assessment';
+    }
+    if (symptoms.some(s => s.includes('anxiety') || s.includes('panic'))) {
+      return 'anxiety_assessment';
+    }
+    if (input.stressLevel >= 8) {
+      return 'stress_assessment';
+    }
+    if (content.includes('trauma') || content.includes('ptsd')) {
+      return 'trauma_assessment';
+    }
+    return 'general_assessment';
+  }
+
+  /**
+   * Determine initial risk level for RAG context
+   */
+  private determineInitialRiskLevel(input: UserInput): string {
+    const content = input.mentalState.toLowerCase();
+    const riskIndicators = [
+      'suicide', 'self-harm', 'kill myself', 'end it all',
+      'hopeless', 'worthless', 'better off dead'
+    ];
+    
+    if (riskIndicators.some(indicator => content.includes(indicator))) {
+      return 'high';
+    }
+    if (input.stressLevel >= 8 || input.sleepPattern <= 4) {
+      return 'medium';
+    }
+    return 'low';
+  }
+
+  /**
+   * Extract emotional context for RAG enhancement
+   */
+  private extractEmotionalContext(input: UserInput): string[] {
+    const emotions = this.extractEmotions(input.mentalState);
+    const symptomsEmotions = input.currentSymptoms.flatMap(s => this.extractEmotions(s));
+    return [...new Set([...emotions, ...symptomsEmotions])];
   }
 
   async process(input: UserInput, context?: AgentContext): Promise<AssessmentResponse> {

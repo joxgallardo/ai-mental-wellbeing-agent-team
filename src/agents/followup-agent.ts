@@ -1,14 +1,104 @@
-import { BaseAgent } from './base-agent';
+import { EnhancedBaseAgent } from './enhanced-base-agent';
 import { FollowUpResponse, AgentContext, UserInput } from '../types/index';
 import { agentSystemMessages } from '../config/index';
 
-export class FollowUpAgent extends BaseAgent {
+export class FollowUpAgent extends EnhancedBaseAgent {
   constructor() {
     super(
       'followup_agent',
       'Mental Health Recovery Planner',
-      agentSystemMessages.followUp
+      agentSystemMessages.followUp,
+      { 
+        ragEnabled: true, 
+        hybridSearchEnabled: true,
+        focusArea: 'recovery',
+        domainSpecific: true 
+      }
     );
+  }
+
+  /**
+   * Customize RAG context for follow-up and recovery planning
+   */
+  protected customizeRAGContext(ragContext: any, input: UserInput, context?: AgentContext): any {
+    const recoveryStage = this.determineRecoveryStage(input, context);
+    const planningTimeframe = this.determinePlanningTimeframe(input);
+    
+    return {
+      ...ragContext,
+      preferredCategories: ['best_practices', 'methodologies', 'long_term_strategies', 'monitoring'],
+      focusAreas: ['recovery_planning', 'long_term_wellness', 'relapse_prevention', 'self_monitoring'],
+      complexityLevel: 'intermediate',
+      recoveryStage,
+      planningTimeframe,
+      timeframe: 'long_term',
+      evidenceLevel: 'research-based',
+      practiceArea: 'follow_up_care',
+    };
+  }
+
+  /**
+   * Filter knowledge specifically for follow-up and recovery role
+   */
+  protected filterKnowledgeForRole(knowledgeResults: any[], ragContext: any): any[] {
+    return knowledgeResults.filter(result => {
+      const content = result.content.toLowerCase();
+      const category = result.document?.category || '';
+      
+      // Prioritize follow-up and recovery content
+      return (
+        category === 'best_practices' ||
+        category === 'methodologies' ||
+        category === 'long_term_strategies' ||
+        content.includes('follow-up') ||
+        content.includes('recovery') ||
+        content.includes('long-term') ||
+        content.includes('monitoring') ||
+        content.includes('maintenance') ||
+        content.includes('sustainability') ||
+        content.includes('relapse prevention') ||
+        content.includes('progress tracking') ||
+        content.includes('self-care') ||
+        content.includes('habit formation') ||
+        content.includes('wellness plan')
+      );
+    }).slice(0, 8); // Focus on most relevant recovery strategies
+  }
+
+  /**
+   * Determine recovery stage for contextualized planning
+   */
+  private determineRecoveryStage(input: UserInput, context?: AgentContext): string {
+    const hasHistory = context?.previousResponses && context.previousResponses.length > 0;
+    const stressLevel = input.stressLevel;
+    const symptomsCount = input.currentSymptoms.length;
+    
+    if (!hasHistory && (stressLevel >= 8 || symptomsCount >= 4)) {
+      return 'crisis_stabilization';
+    }
+    if (hasHistory && stressLevel >= 6) {
+      return 'active_recovery';
+    }
+    if (stressLevel <= 5 && symptomsCount <= 2) {
+      return 'maintenance';
+    }
+    return 'recovery_building';
+  }
+
+  /**
+   * Determine appropriate planning timeframe
+   */
+  private determinePlanningTimeframe(input: UserInput): string {
+    const stressLevel = input.stressLevel;
+    const symptomsCount = input.currentSymptoms.length;
+    
+    if (stressLevel >= 8 || symptomsCount >= 4) {
+      return 'short_term'; // 2-4 weeks
+    }
+    if (stressLevel >= 6 || symptomsCount >= 2) {
+      return 'medium_term'; // 1-3 months
+    }
+    return 'long_term'; // 3-12 months
   }
 
   async process(input: UserInput, context?: AgentContext): Promise<FollowUpResponse> {

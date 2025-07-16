@@ -16,6 +16,16 @@ const EnvironmentSchema = z.object({
   OPENAI_TIMEOUT: z.string().transform(Number).default('30000'),
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
   CORS_ORIGIN: z.string().default('*'),
+  // Supabase configuration
+  SUPABASE_URL: z.string().optional(),
+  SUPABASE_ANON_KEY: z.string().optional(),
+  SUPABASE_SERVICE_KEY: z.string().optional(),
+  // RAG feature flags
+  RAG_ENABLED: z.string().transform(val => val === 'true').default('false'),
+  HYBRID_SEARCH_ENABLED: z.string().transform(val => val === 'true').default('false'),
+  RAG_EMBEDDING_MODEL: z.string().default('Xenova/all-MiniLM-L6-v2'),
+  RAG_MAX_RESULTS: z.string().transform(Number).default('5'),
+  RAG_MIN_RELEVANCE_SCORE: z.string().transform(Number).default('0.6'),
 });
 
 // Validate environment variables
@@ -41,6 +51,23 @@ export const serverConfig = {
 export const loggingConfig = {
   level: env.LOG_LEVEL,
   format: env.NODE_ENV === 'production' ? 'json' : 'simple',
+};
+
+// Supabase configuration
+export const supabaseConfig = {
+  url: env.SUPABASE_URL,
+  anonKey: env.SUPABASE_ANON_KEY,
+  serviceKey: env.SUPABASE_SERVICE_KEY,
+};
+
+// RAG configuration
+export const ragConfig = {
+  enabled: env.RAG_ENABLED,
+  hybridSearchEnabled: env.HYBRID_SEARCH_ENABLED,
+  embeddingModel: env.RAG_EMBEDDING_MODEL,
+  maxResults: env.RAG_MAX_RESULTS,
+  minRelevanceScore: env.RAG_MIN_RELEVANCE_SCORE,
+  collectionPrefix: 'mental_health',
 };
 
 // Agent system messages

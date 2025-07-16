@@ -11,6 +11,8 @@ import {
 } from '../types/index';
 import { createLogger } from '../utils/logger';
 import { UserInputSchema } from '../types/index';
+import { ragFoundationService } from './rag/rag-foundation.service';
+import { featureFlagService } from './feature-flag.service';
 
 export class AgentCoordinatorService {
   private readonly assessmentAgent: AssessmentAgent;
@@ -28,37 +30,59 @@ export class AgentCoordinatorService {
     userInput: UserInput,
     sessionId: string
   ): Promise<MentalHealthPlan> {
-    this.logger.info('Starting mental health plan generation', { sessionId });
+    this.logger.info('Starting RAG-enhanced mental health plan generation', { 
+      sessionId,
+      ragEnabled: await this.isRAGEnabled(),
+      ragReady: ragFoundationService.isReady()
+    });
 
     try {
       // Validate user input
       const validatedInput = UserInputSchema.parse(userInput);
 
-      // Step 1: Assessment
-      this.logger.info('Starting assessment phase', { sessionId });
+      // Check RAG system status for enhanced context
+      const ragStatus = await this.checkRAGStatus();
+      
+      // Step 1: Assessment with RAG enhancement
+      this.logger.info('Starting RAG-enhanced assessment phase', { sessionId, ragStatus });
       const assessment = await this.assessmentAgent.process(validatedInput, {
         sessionId,
         userInput: validatedInput,
+        ragContext: {
+          domainId: 'life_coaching',
+          sessionHistory: [],
+          userPreferences: this.extractUserPreferences(validatedInput),
+        }
       });
 
-      // Step 2: Action Plan
-      this.logger.info('Starting action plan phase', { sessionId });
+      // Step 2: Action Plan with context from assessment
+      this.logger.info('Starting RAG-enhanced action plan phase', { sessionId });
       const actionPlan = await this.actionAgent.process(validatedInput, {
         sessionId,
         userInput: validatedInput,
         previousResponses: [assessment],
+        ragContext: {
+          domainId: 'life_coaching',
+          assessmentInsights: this.extractAssessmentInsights(assessment),
+          urgencyLevel: assessment.riskLevel,
+        }
       });
 
-      // Step 3: Follow-up Strategy
-      this.logger.info('Starting follow-up strategy phase', { sessionId });
+      // Step 3: Follow-up Strategy with comprehensive context
+      this.logger.info('Starting RAG-enhanced follow-up strategy phase', { sessionId });
       const followUp = await this.followUpAgent.process(validatedInput, {
         sessionId,
         userInput: validatedInput,
         previousResponses: [assessment, actionPlan],
+        ragContext: {
+          domainId: 'life_coaching',
+          recoveryStage: this.determineRecoveryStage(assessment, actionPlan),
+          planningTimeframe: actionPlan.urgency === 'high' ? 'short_term' : 'medium_term',
+        }
       });
 
-      // Generate summary
-      const summary = this.generateSummary(assessment, actionPlan, followUp);
+      // Generate enhanced summary with RAG insights
+      const summary = this.generateEnhancedSummary(assessment, actionPlan, followUp, ragStatus);
 
       const mentalHealthPlan: MentalHealthPlan = {
         sessionId,
@@ -66,13 +90,25 @@ export class AgentCoordinatorService {
         actionPlan,
         followUp,
         summary,
+        metadata: {
+          ragEnabled: ragStatus.enabled,
+          ragQuality: ragStatus.ready ? 'high' : 'degraded',
+          processingTime: Date.now(),
+          agentVersions: {
+            assessment: 'enhanced-v1',
+            action: 'enhanced-v1',
+            followUp: 'enhanced-v1'
+          }
+        }
       };
 
-      this.logger.info('Mental health plan generated successfully', {
+      this.logger.info('RAG-enhanced mental health plan generated successfully', {
         sessionId,
         riskLevel: assessment.riskLevel,
         urgency: actionPlan.urgency,
         strategiesCount: followUp.longTermStrategies.length,
+        ragEnabled: ragStatus.enabled,
+        ragQuality: ragStatus.ready ? 'high' : 'degraded'
       });
 
       return mentalHealthPlan;
@@ -175,11 +211,138 @@ export class AgentCoordinatorService {
     }
   }
 
-  getAgentStatus(): Record<string, string> {
+  /**
+   * Check if RAG system is enabled via feature flags
+   */
+  private async isRAGEnabled(): Promise<boolean> {
+    try {
+      return await featureFlagService.isEnabled('rag_enhancement', { userId: 'system' });
+    } catch (error) {
+      this.logger.warn('Failed to check RAG feature flag', { error });
+      return false;
+    }
+  }
+
+  /**
+   * Check RAG system status for enhanced planning
+   */
+  private async checkRAGStatus(): Promise<{ enabled: boolean; ready: boolean; quality: string }> {
+    const enabled = await this.isRAGEnabled();
+    const ready = ragFoundationService.isReady();
+    
     return {
-      assessment: this.assessmentAgent.name,
-      action: this.actionAgent.name,
-      followUp: this.followUpAgent.name,
+      enabled,
+      ready: enabled && ready,
+      quality: enabled && ready ? 'high' : enabled ? 'degraded' : 'disabled'
+    };
+  }
+
+  /**
+   * Extract user preferences for RAG context
+   */
+  private extractUserPreferences(input: UserInput): any {
+    return {
+      stressLevel: input.stressLevel,
+      sleepPattern: input.sleepPattern,
+      supportSystem: input.supportSystem,
+      symptoms: input.currentSymptoms,
+      communicationStyle: this.inferCommunicationStyle(input.mentalState),
+    };
+  }
+
+  /**
+   * Extract insights from assessment for action planning
+   */
+  private extractAssessmentInsights(assessment: AssessmentResponse): any {
+    return {
+      riskLevel: assessment.riskLevel,
+      primaryEmotions: assessment.emotionalAnalysis.primaryEmotions,
+      riskFactors: assessment.riskFactors,
+      protectiveFactors: assessment.protectiveFactors,
+      emotionalIntensity: assessment.emotionalAnalysis.intensity,
+    };
+  }
+
+  /**
+   * Determine recovery stage for follow-up planning
+   */
+  private determineRecoveryStage(assessment: AssessmentResponse, actionPlan: ActionResponse): string {
+    if (assessment.riskLevel === 'high' || actionPlan.urgency === 'high') {
+      return 'crisis_stabilization';
+    }
+    if (assessment.riskLevel === 'medium' || actionPlan.urgency === 'medium') {
+      return 'active_recovery';
+    }
+    return 'maintenance';
+  }
+
+  /**
+   * Infer communication style from mental state description
+   */
+  private inferCommunicationStyle(mentalState: string): string {
+    const content = mentalState.toLowerCase();
+    
+    if (content.includes('direct') || content.includes('straightforward')) {
+      return 'direct';
+    }
+    if (content.includes('gentle') || content.includes('supportive')) {
+      return 'supportive';
+    }
+    if (content.includes('detailed') || content.includes('thorough')) {
+      return 'comprehensive';
+    }
+    return 'balanced';
+  }
+
+  /**
+   * Generate enhanced summary with RAG insights
+   */
+  private generateEnhancedSummary(
+    assessment: AssessmentResponse,
+    actionPlan: ActionResponse,
+    followUp: FollowUpResponse,
+    ragStatus: { enabled: boolean; ready: boolean; quality: string }
+  ): MentalHealthPlan['summary'] {
+    const baseSummary = this.generateSummary(assessment, actionPlan, followUp);
+    
+    // Add RAG-specific insights
+    if (ragStatus.enabled && ragStatus.ready) {
+      baseSummary.keyInsights.unshift('✨ Enhanced with evidence-based mental health practices');
+      
+      // Add quality indicator
+      baseSummary.longTermGoals.push(`RAG Quality: ${ragStatus.quality} - Evidence-based recommendations`);
+    } else if (ragStatus.enabled) {
+      baseSummary.keyInsights.push('⚠️ RAG system partially available - using cached knowledge');
+    }
+    
+    return baseSummary;
+  }
+
+  getAgentStatus(): Record<string, any> {
+    return {
+      assessment: {
+        name: this.assessmentAgent.name,
+        type: 'EnhancedBaseAgent',
+        ragEnabled: true,
+        focusArea: 'assessment'
+      },
+      action: {
+        name: this.actionAgent.name,
+        type: 'EnhancedBaseAgent',
+        ragEnabled: true,
+        focusArea: 'intervention'
+      },
+      followUp: {
+        name: this.followUpAgent.name,
+        type: 'EnhancedBaseAgent',
+        ragEnabled: true,
+        focusArea: 'recovery'
+      },
+      rag: {
+        enabled: ragFoundationService.isEnabled(),
+        ready: ragFoundationService.isReady(),
+        version: 'v1.0'
+      }
     };
   }
 }
