@@ -254,34 +254,34 @@ export abstract class BaseDomainAdapter {
     let score = 0;
 
     // Methodology preference
-    if (context.preferredMethodology && result.metadata.methodology) {
-      if (result.metadata.methodology === context.preferredMethodology) {
-        score += personalization.methodology_preference_weight || 0.3;
+    if (context.preferredMethodology && result.metadata['methodology']) {
+      if (result.metadata['methodology'] === context.preferredMethodology) {
+        score += personalization['methodology_preference_weight'] || 0.3;
       }
     }
 
     // Complexity preference
-    if (context.complexityLevel && result.metadata.complexity_level) {
-      if (result.metadata.complexity_level === context.complexityLevel) {
-        score += personalization.complexity_preference_weight || 0.2;
+    if (context.complexityLevel && result.metadata['complexity_level']) {
+      if (result.metadata['complexity_level'] === context.complexityLevel) {
+        score += personalization['complexity_preference_weight'] || 0.2;
       }
     }
 
     // Goal alignment
-    if (context.currentGoals && result.metadata.goal_type) {
+    if (context.currentGoals && result.metadata['goal_type']) {
       const goalMatch = context.currentGoals.some(goal => 
-        result.metadata.goal_type.toLowerCase().includes(goal.toLowerCase()) ||
+        result.metadata['goal_type'].toLowerCase().includes(goal.toLowerCase()) ||
         result.content.toLowerCase().includes(goal.toLowerCase())
       );
       
       if (goalMatch) {
-        score += personalization.goal_alignment_weight || 0.25;
+        score += personalization['goal_alignment_weight'] || 0.25;
       }
     }
 
     // Life area alignment
-    if (context.lifeArea && result.metadata.life_area) {
-      if (result.metadata.life_area === context.lifeArea) {
+    if (context.lifeArea && result.metadata['life_area']) {
+      if (result.metadata['life_area'] === context.lifeArea) {
         score += 0.15; // Additional boost for life area match
       }
     }
@@ -303,29 +303,29 @@ export abstract class BaseDomainAdapter {
     // Apply boost factors from configuration
     if (rules.boost_factors) {
       // Methodology match
-      if (context.preferredMethodology && result.metadata.methodology === context.preferredMethodology) {
-        const factor = rules.boost_factors.methodology_match || 1.2;
+      if (context.preferredMethodology && result.metadata['methodology'] === context.preferredMethodology) {
+        const factor = rules.boost_factors['methodology_match'] || 1.2;
         boostedScore *= factor;
         boostFactors.methodology_match = factor;
       }
 
       // Life area match
-      if (context.lifeArea && result.metadata.life_area === context.lifeArea) {
-        const factor = rules.boost_factors.life_area_match || 1.15;
+      if (context.lifeArea && result.metadata['life_area'] === context.lifeArea) {
+        const factor = rules.boost_factors['life_area_match'] || 1.15;
         boostedScore *= factor;
         boostFactors.life_area_match = factor;
       }
 
       // Evidence level boost
-      if (result.metadata.evidence_level === 'research-based') {
-        const factor = rules.boost_factors.evidence_level_high || 1.1;
+      if (result.metadata['evidence_level'] === 'research-based') {
+        const factor = rules.boost_factors['evidence_level_high'] || 1.1;
         boostedScore *= factor;
         boostFactors.evidence_level_high = factor;
       }
 
       // Complexity match
-      if (context.complexityLevel && result.metadata.complexity_level === context.complexityLevel) {
-        const factor = rules.boost_factors.complexity_match || 1.05;
+      if (context.complexityLevel && result.metadata['complexity_level'] === context.complexityLevel) {
+        const factor = rules.boost_factors['complexity_match'] || 1.05;
         boostedScore *= factor;
         boostFactors.complexity_match = factor;
       }
@@ -334,9 +334,9 @@ export abstract class BaseDomainAdapter {
     // Apply penalty factors
     if (rules.penalty_factors) {
       // Complexity mismatch
-      if (context.complexityLevel && result.metadata.complexity_level && 
-          result.metadata.complexity_level !== context.complexityLevel) {
-        const factor = rules.penalty_factors.complexity_mismatch || 0.9;
+      if (context.complexityLevel && result.metadata['complexity_level'] && 
+          result.metadata['complexity_level'] !== context.complexityLevel) {
+        const factor = rules.penalty_factors['complexity_mismatch'] || 0.9;
         boostedScore *= factor;
         boostFactors.complexity_mismatch = factor;
       }
@@ -516,5 +516,205 @@ export class DomainConfigLoader {
    */
   static getCachedDomains(): string[] {
     return Array.from(this.cache.keys());
+  }
+}
+
+// =====================================================
+// Concrete Domain Adapter Implementations
+// =====================================================
+
+/**
+ * Life Coaching Domain Adapter
+ */
+export class LifeCoachingAdapter extends BaseDomainAdapter {
+  constructor() {
+    super('life_coaching');
+  }
+
+  override enhanceQuery(query: string, context: DomainContext): QueryEnhancementResult {
+    const addedContext: string[] = [];
+    let enhancedQuery = query;
+
+    // Add life area context
+    if (context.lifeArea) {
+      enhancedQuery += ` life area: ${context.lifeArea}`;
+      addedContext.push(`life_area:${context.lifeArea}`);
+    }
+
+    // Add preferred methodology
+    if (context.preferredMethodology) {
+      enhancedQuery += ` methodology: ${context.preferredMethodology}`;
+      addedContext.push(`methodology:${context.preferredMethodology}`);
+    }
+
+    return {
+      enhancedQuery,
+      originalQuery: query,
+      addedContext,
+      confidence: 0.85,
+    };
+  }
+
+  override filterResults(results: SearchResult[], context: DomainContext): FilteredResult[] {
+    return results
+      .map(result => {
+        const { boostedScore, boostFactors } = this.applyBoostFactors(result, context);
+        const personalizationScore = this.calculatePersonalizationScore(result, context);
+        
+        return {
+          ...result,
+          originalScore: result.similarity,
+          boostedScore: boostedScore + personalizationScore,
+          boostFactors,
+          filterReasons: [],
+        };
+      })
+      .filter(result => result.boostedScore >= this.getFilteringRules().minimum_relevance_score)
+      .sort((a, b) => b.boostedScore - a.boostedScore);
+  }
+
+  detectLifeArea(query: string, context: DomainContext): string | null {
+    const lifeAreas = ['career', 'relationships', 'health', 'finances', 'personal_growth'];
+    const queryLower = query.toLowerCase();
+
+    for (const area of lifeAreas) {
+      if (queryLower.includes(area)) {
+        return area;
+      }
+    }
+
+    return context.lifeArea || null;
+  }
+
+  getRecommendedMethodology(query: string, context: DomainContext): string | null {
+    const methodologies = this.config.methodologies || [];
+    
+    if (context.preferredMethodology && methodologies.includes(context.preferredMethodology)) {
+      return context.preferredMethodology;
+    }
+
+    // Default methodology selection logic
+    if (query.toLowerCase().includes('goal')) {
+      return 'GROW Model';
+    }
+
+    return methodologies.length > 0 ? methodologies[0] : null;
+  }
+}
+
+/**
+ * Career Coaching Domain Adapter  
+ */
+export class CareerCoachingAdapter extends BaseDomainAdapter {
+  constructor() {
+    super('career_coaching');
+  }
+
+  override enhanceQuery(query: string, context: DomainContext): QueryEnhancementResult {
+    const addedContext: string[] = [];
+    let enhancedQuery = query;
+
+    // Add career-specific context
+    if (context.userProfile?.['career_stage']) {
+      enhancedQuery += ` career stage: ${context.userProfile['career_stage']}`;
+      addedContext.push(`career_stage:${context.userProfile['career_stage']}`);
+    }
+
+    if (context.userProfile?.['industry']) {
+      enhancedQuery += ` industry: ${context.userProfile['industry']}`;
+      addedContext.push(`industry:${context.userProfile['industry']}`);
+    }
+
+    return {
+      enhancedQuery,
+      originalQuery: query,
+      addedContext,
+      confidence: 0.9,
+      careerSpecific: true,
+    } as QueryEnhancementResult & { careerSpecific: boolean };
+  }
+
+  override filterResults(results: SearchResult[], context: DomainContext): FilteredResult[] {
+    return results
+      .map(result => {
+        const { boostedScore, boostFactors } = this.applyBoostFactors(result, context);
+        
+        return {
+          ...result,
+          originalScore: result.similarity,
+          boostedScore,
+          boostFactors,
+          filterReasons: [],
+        };
+      })
+      .filter(result => result.boostedScore >= 0.6)
+      .sort((a, b) => b.boostedScore - a.boostedScore);
+  }
+
+  detectLifeArea(): string | null {
+    return 'career';
+  }
+
+  getRecommendedMethodology(query: string, context: DomainContext): string | null {
+    if (query.toLowerCase().includes('skill')) {
+      return 'Skills Gap Analysis';
+    }
+    if (query.toLowerCase().includes('brand')) {
+      return 'Personal Branding';
+    }
+    return 'GROW Model';
+  }
+}
+
+/**
+ * Relationship Coaching Domain Adapter
+ */
+export class RelationshipCoachingAdapter extends BaseDomainAdapter {
+  constructor() {
+    super('relationship_coaching');
+  }
+
+  override enhanceQuery(query: string, context: DomainContext): QueryEnhancementResult {
+    const addedContext: string[] = [];
+    let enhancedQuery = query;
+
+    // Add relationship-specific context
+    if (context.userProfile?.['relationship_type']) {
+      enhancedQuery += ` relationship type: ${context.userProfile['relationship_type']}`;
+      addedContext.push(`relationship_type:${context.userProfile['relationship_type']}`);
+    }
+
+    return {
+      enhancedQuery,
+      originalQuery: query,
+      addedContext,
+      confidence: 0.88,
+      relationshipSpecific: true,
+    } as QueryEnhancementResult & { relationshipSpecific: boolean };
+  }
+
+  override filterResults(results: SearchResult[], context: DomainContext): FilteredResult[] {
+    return results
+      .map(result => {
+        const { boostedScore, boostFactors } = this.applyBoostFactors(result, context);
+        
+        return {
+          ...result,
+          originalScore: result.similarity,
+          boostedScore,
+          boostFactors,
+          filterReasons: [],
+        };
+      })
+      .filter(result => result.boostedScore >= 0.65)
+      .sort((a, b) => b.boostedScore - a.boostedScore);
+  }
+
+  detectLifeArea(): string | null {
+    return 'relationships';
+  }
+
+  getRecommendedMethodology(): string | null {
+    return 'Communication Coaching';
   }
 }

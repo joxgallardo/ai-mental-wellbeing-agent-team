@@ -1,4 +1,4 @@
-import { KnowledgeDocument } from '../services/rag/knowledge-population.service';
+import { KnowledgeDocument } from '../../services/rag/knowledge-population.service';
 
 /**
  * Initial Life Coaching Knowledge Base

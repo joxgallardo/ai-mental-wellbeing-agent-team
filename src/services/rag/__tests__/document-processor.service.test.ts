@@ -148,9 +148,9 @@ Remember that goal setting is an iterative process. Review and adjust your goals
       const result = await processor.processDocument('doc1', sampleContent, sampleMetadata);
       
       const chunk = result.chunks[0];
-      expect(chunk.metadata.methodology).toBe('GROW Model');
-      expect(chunk.metadata.life_area).toBe('career');
-      expect(chunk.metadata.complexity_level).toBe('intermediate');
+      expect(chunk.metadata['methodology']).toBe('GROW Model');
+      expect(chunk.metadata['life_area']).toBe('career');
+      expect(chunk.metadata['complexity_level']).toBe('intermediate');
       expect(chunk.metadata.created_at).toBeTruthy();
     });
 
@@ -163,8 +163,8 @@ Remember that goal setting is an iterative process. Review and adjust your goals
       const result = await processor.processDocument('doc1', sampleContent, minimalMetadata);
       
       const chunk = result.chunks[0];
-      expect(chunk.metadata.methodology).toBeTruthy();
-      expect(chunk.metadata.complexity_level).toBeTruthy();
+      expect(chunk.metadata['methodology']).toBeTruthy();
+      expect(chunk.metadata['complexity_level']).toBeTruthy();
     });
 
     it('should calculate quality scores', async () => {
@@ -345,8 +345,8 @@ minimal content
         category: 'life_coaching',
       });
       
-      expect(beginnerResult.chunks[0].metadata.complexity_level).toBe('beginner');
-      expect(advancedResult.chunks[0].metadata.complexity_level).toBe('advanced');
+      expect(beginnerResult.chunks[0].metadata['complexity_level']).toBe('beginner');
+      expect(advancedResult.chunks[0].metadata['complexity_level']).toBe('advanced');
     });
 
     it('should detect methodology from content', async () => {
@@ -357,7 +357,7 @@ minimal content
         category: 'life_coaching',
       });
       
-      expect(result.chunks[0].metadata.methodology).toBe('GROW Model');
+      expect(result.chunks[0].metadata['methodology']).toBe('GROW Model');
     });
 
     it('should detect life area from content', async () => {
@@ -368,7 +368,7 @@ minimal content
         category: 'life_coaching',
       });
       
-      expect(result.chunks[0].metadata.life_area).toBe('career');
+      expect(result.chunks[0].metadata['life_area']).toBe('career');
     });
 
     it('should extract tags from content', async () => {

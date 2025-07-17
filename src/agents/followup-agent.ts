@@ -40,7 +40,7 @@ export class FollowUpAgent extends EnhancedBaseAgent {
   /**
    * Filter knowledge specifically for follow-up and recovery role
    */
-  protected filterKnowledgeForRole(knowledgeResults: any[], ragContext: any): any[] {
+  protected filterKnowledgeForRole(knowledgeResults: any[], _ragContext: any): any[] {
     return knowledgeResults.filter(result => {
       const content = result.content.toLowerCase();
       const category = result.document?.category || '';

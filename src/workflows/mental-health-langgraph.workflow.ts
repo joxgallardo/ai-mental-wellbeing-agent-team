@@ -6,12 +6,10 @@
  */
 
 import { StateGraph, END, CompiledStateGraph } from '@langchain/langgraph';
-import { BaseMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
 import { UserInput, AgentContext, AgentResponse } from '../types/index';
 import { EnhancedBaseAgent } from '../agents/enhanced-base-agent';
 import { ragFoundationService } from '../services/rag/rag-foundation.service';
 import { featureFlagService } from '../services/feature-flag.service';
-import { DomainAdapterFactory } from '../services/rag/domain-adapter.service';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('MentalHealthWorkflow');
@@ -73,7 +71,7 @@ class WorkflowAssessmentAgent extends EnhancedBaseAgent {
     );
   }
 
-  protected customizeRAGContext(ragContext: any, input: UserInput, context?: AgentContext): any {
+  protected override customizeRAGContext(ragContext: any, input: UserInput, _context?: AgentContext): any {
     return {
       ...ragContext,
       preferredMethodology: 'Life Wheel Assessment',
@@ -83,7 +81,7 @@ class WorkflowAssessmentAgent extends EnhancedBaseAgent {
     };
   }
 
-  protected filterKnowledgeForRole(knowledgeResults: any[], ragContext: any): any[] {
+  protected override filterKnowledgeForRole(knowledgeResults: any[], _ragContext: any): any[] {
     return knowledgeResults.filter(result => 
       result.document.category === 'assessment_tools' ||
       result.document.category === 'methodologies' ||
@@ -92,7 +90,7 @@ class WorkflowAssessmentAgent extends EnhancedBaseAgent {
     );
   }
 
-  private detectComplexityLevel(input: UserInput): string {
+  override detectComplexityLevel(input: UserInput): string {
     const symptoms = input.currentSymptoms?.length || 0;
     const stressLevel = input.stressLevel || 0;
     
@@ -129,7 +127,7 @@ class WorkflowActionAgent extends EnhancedBaseAgent {
     );
   }
 
-  protected customizeRAGContext(ragContext: any, input: UserInput, context?: AgentContext): any {
+  protected override customizeRAGContext(ragContext: any, input: UserInput, context?: AgentContext): any {
     // Extract insights from assessment if available
     const assessmentInsights = this.extractAssessmentInsights(context);
     
@@ -143,7 +141,7 @@ class WorkflowActionAgent extends EnhancedBaseAgent {
     };
   }
 
-  protected filterKnowledgeForRole(knowledgeResults: any[], ragContext: any): any[] {
+  protected override filterKnowledgeForRole(knowledgeResults: any[], _ragContext: any): any[] {
     return knowledgeResults.filter(result => 
       result.document.category === 'best_practices' ||
       result.document.category === 'methodologies' ||
@@ -157,6 +155,8 @@ class WorkflowActionAgent extends EnhancedBaseAgent {
     if (!context?.previousResponses?.length) return null;
     
     const assessmentResponse = context.previousResponses[0];
+    if (!assessmentResponse) return null;
+    
     return {
       mainConcerns: this.extractMainConcerns(assessmentResponse.content),
       recommendedFocus: this.extractRecommendedFocus(assessmentResponse.recommendations),
@@ -217,7 +217,7 @@ class WorkflowFollowUpAgent extends EnhancedBaseAgent {
     );
   }
 
-  protected customizeRAGContext(ragContext: any, input: UserInput, context?: AgentContext): any {
+  protected override customizeRAGContext(ragContext: any, input: UserInput, context?: AgentContext): any {
     const actionInsights = this.extractActionInsights(context);
     
     return {
@@ -230,7 +230,7 @@ class WorkflowFollowUpAgent extends EnhancedBaseAgent {
     };
   }
 
-  protected filterKnowledgeForRole(knowledgeResults: any[], ragContext: any): any[] {
+  protected override filterKnowledgeForRole(knowledgeResults: any[], _ragContext: any): any[] {
     return knowledgeResults.filter(result => 
       result.document.category === 'best_practices' ||
       result.content.toLowerCase().includes('support') ||
@@ -245,6 +245,8 @@ class WorkflowFollowUpAgent extends EnhancedBaseAgent {
     if (!context?.previousResponses || context.previousResponses.length < 2) return null;
     
     const actionResponse = context.previousResponses[1];
+    if (!actionResponse) return null;
+    
     return {
       plannedActions: this.extractPlannedActions(actionResponse.content),
       timeline: this.extractTimeline(actionResponse.content),
@@ -286,7 +288,7 @@ class WorkflowFollowUpAgent extends EnhancedBaseAgent {
  * Mental Health LangGraph Workflow
  */
 export class MentalHealthWorkflow {
-  private workflow: CompiledStateGraph<WorkflowState>;
+  private workflow: CompiledStateGraph<WorkflowState, Partial<WorkflowState>, "domainDetection" | "assessment" | "action" | "followUp" | "__end__">;
   private assessmentAgent = new WorkflowAssessmentAgent();
   private actionAgent = new WorkflowActionAgent();
   private followUpAgent = new WorkflowFollowUpAgent();
@@ -298,7 +300,7 @@ export class MentalHealthWorkflow {
   /**
    * Create the LangGraph workflow
    */
-  private createWorkflow(): CompiledStateGraph<WorkflowState> {
+  private createWorkflow(): CompiledStateGraph<WorkflowState, Partial<WorkflowState>, "domainDetection" | "assessment" | "action" | "followUp" | "__end__"> {
     const workflow = new StateGraph<WorkflowState>({
       channels: {
         userInput: null,

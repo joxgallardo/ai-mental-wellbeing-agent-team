@@ -39,7 +39,7 @@ export class ActionAgent extends EnhancedBaseAgent {
   /**
    * Filter knowledge specifically for action/intervention role
    */
-  protected filterKnowledgeForRole(knowledgeResults: any[], ragContext: any): any[] {
+  protected filterKnowledgeForRole(knowledgeResults: any[], _ragContext: any): any[] {
     return knowledgeResults.filter(result => {
       const content = result.content.toLowerCase();
       const category = result.document?.category || '';

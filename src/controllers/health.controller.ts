@@ -11,6 +11,14 @@ import { createLogger } from '../utils/logger';
 
 const logger = createLogger('HealthController');
 
+// Helper function to safely extract error message
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
+};
+
 /**
  * Health Controller
  * 
@@ -38,7 +46,8 @@ export class HealthController {
       });
 
     } catch (error) {
-      logger.error('Health check failed', { error: error.message });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Health check failed', { error: errorMessage });
       res.status(503).json({
         status: 'unhealthy',
         timestamp: new Date().toISOString(),
@@ -79,7 +88,7 @@ export class HealthController {
       }
 
     } catch (error) {
-      logger.error('Readiness check failed', { error: error.message });
+      logger.error('Readiness check failed', { error: getErrorMessage(error) });
       res.status(503).json({
         status: 'unhealthy',
         timestamp: new Date().toISOString(),

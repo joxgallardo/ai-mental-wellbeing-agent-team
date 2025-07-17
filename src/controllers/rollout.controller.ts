@@ -7,8 +7,8 @@
 
 import { Request, Response } from 'express';
 import { featureRolloutService, RolloutConfig, UserFeedback } from '../services/feature-rollout.service';
-import { validateRequest } from '../middleware/validation.middleware';
-import { requireAuth } from '../middleware/auth.middleware';
+import { validateBody } from '../middleware/validation.middleware';
+import { authenticateApiKey, AuthenticatedRequest } from '../middleware/auth.middleware';
 import { createLogger } from '../utils/logger';
 import { z } from 'zod';
 
@@ -40,7 +40,7 @@ export class RolloutController {
    * Start a new feature rollout
    * POST /api/admin/rollout/start
    */
-  async startRollout(req: Request, res: Response): Promise<void> {
+  async startRollout(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const validatedData = StartRolloutSchema.parse(req.body);
       

@@ -625,10 +625,10 @@ export class KnowledgePopulationService {
               processing_time: result.processing_time,
               quality_score: result.quality_report.overall_score,
               total_chunks: result.chunks.length,
-              methodology: result.chunks[0]?.metadata.methodology,
-              life_area: result.chunks[0]?.metadata.life_area,
-              complexity_level: result.chunks[0]?.metadata.complexity_level,
-              evidence_level: result.chunks[0]?.metadata.evidence_level,
+              methodology: result.chunks[0]?.metadata['methodology'],
+              life_area: result.chunks[0]?.metadata['life_area'],
+              complexity_level: result.chunks[0]?.metadata['complexity_level'],
+              evidence_level: result.chunks[0]?.metadata['evidence_level'],
               tags: result.chunks[0]?.metadata.tags,
             },
             created_at: new Date().toISOString(),
@@ -720,11 +720,11 @@ export class KnowledgePopulationService {
     );
     
     const complexityLevels = results.flatMap(result => 
-      result.chunks.map(chunk => chunk.metadata.complexity_level || 'unknown')
+      result.chunks.map(chunk => chunk.metadata['complexity_level'] || 'unknown')
     );
     
     const methodologies = results.flatMap(result => 
-      result.chunks.map(chunk => chunk.metadata.methodology || 'unknown')
+      result.chunks.map(chunk => chunk.metadata['methodology'] || 'unknown')
     );
 
     const averageQualityScore = qualityScores.reduce((sum, score) => sum + score, 0) / qualityScores.length;
@@ -831,15 +831,15 @@ export class KnowledgePopulationService {
     );
     
     const methodologies = this.calculateCategoryDistribution(
-      chunks.map(chunk => chunk.metadata.methodology || 'unknown')
+      chunks.map(chunk => chunk.metadata['methodology'] || 'unknown')
     );
     
     const lifeAreas = this.calculateCategoryDistribution(
-      chunks.map(chunk => chunk.metadata.life_area || 'unknown')
+      chunks.map(chunk => chunk.metadata['life_area'] || 'unknown')
     );
     
     const complexityLevels = this.calculateCategoryDistribution(
-      chunks.map(chunk => chunk.metadata.complexity_level || 'unknown')
+      chunks.map(chunk => chunk.metadata['complexity_level'] || 'unknown')
     );
     
     const averageQuality = chunks.reduce((sum, chunk) => sum + chunk.quality_score, 0) / chunks.length;

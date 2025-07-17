@@ -143,10 +143,10 @@ const mockRelationshipCoachingConfig = {
  */
 class CareerCoachingAdapter extends LifeCoachingAdapter {
   constructor() {
-    super('career_coaching');
+    super();
   }
 
-  enhanceQuery(originalQuery: string, ragContext: any): any {
+  override enhanceQuery(originalQuery: string, ragContext: any): any {
     const baseEnhancement = super.enhanceQuery(originalQuery, ragContext);
     
     // Add career-specific enhancements
@@ -170,7 +170,7 @@ class CareerCoachingAdapter extends LifeCoachingAdapter {
     };
   }
 
-  filterResults(results: any[], ragContext: any): any[] {
+  override filterResults(results: any[], ragContext: any): any[] {
     const baseFiltered = super.filterResults(results, ragContext);
     
     // Apply career-specific filtering
@@ -178,11 +178,11 @@ class CareerCoachingAdapter extends LifeCoachingAdapter {
       const metadata = result.metadata || {};
       
       // Boost career-relevant content
-      if (metadata.career_stage === ragContext.careerStage) {
+      if (metadata['career_stage'] === ragContext.careerStage) {
         result.similarity *= 1.3;
       }
       
-      if (metadata.industry === ragContext.industry) {
+      if (metadata['industry'] === ragContext.industry) {
         result.similarity *= 1.2;
       }
       
@@ -233,10 +233,10 @@ class CareerCoachingAdapter extends LifeCoachingAdapter {
  */
 class RelationshipCoachingAdapter extends LifeCoachingAdapter {
   constructor() {
-    super('relationship_coaching');
+    super();
   }
 
-  enhanceQuery(originalQuery: string, ragContext: any): any {
+  override enhanceQuery(originalQuery: string, ragContext: any): any {
     const baseEnhancement = super.enhanceQuery(originalQuery, ragContext);
     
     // Add relationship-specific enhancements
@@ -260,7 +260,7 @@ class RelationshipCoachingAdapter extends LifeCoachingAdapter {
     };
   }
 
-  filterResults(results: any[], ragContext: any): any[] {
+  override filterResults(results: any[], ragContext: any): any[] {
     const baseFiltered = super.filterResults(results, ragContext);
     
     // Apply relationship-specific filtering
@@ -380,9 +380,9 @@ describe('Multi-Domain Architecture Validation', () => {
       const validation = configLoader.validateDomainConfig(result.config);
 
       expect(validation.valid).toBe(true);
-      expect(result.config.metadata_schema.career_stage).toBeDefined();
-      expect(result.config.metadata_schema.career_stage.values).toContain('entry_level');
-      expect(result.config.metadata_schema.industry).toBeDefined();
+      expect(result.config.metadata_schema['career_stage']).toBeDefined();
+      expect(result.config.metadata_schema['career_stage']?.values).toContain('entry_level');
+      expect(result.config.metadata_schema['industry']).toBeDefined();
     });
 
     it('should handle domain-specific personalization weights', async () => {
@@ -395,8 +395,8 @@ describe('Multi-Domain Architecture Validation', () => {
 
       const result = await configLoader.loadDomainConfig('relationship_coaching');
 
-      expect(result.config.personalization.relationship_type_weight).toBe(0.3);
-      expect(result.config.personalization.communication_style_weight).toBe(0.25);
+      expect((result.config.personalization as any).relationship_type_weight).toBe(0.3);
+      expect((result.config.personalization as any).communication_style_weight).toBe(0.25);
       
       // Verify different from life coaching defaults
       expect(result.config.personalization).not.toEqual({
@@ -410,8 +410,8 @@ describe('Multi-Domain Architecture Validation', () => {
   describe('Domain Adapter Factory', () => {
     it('should create domain-specific adapters', () => {
       // Register custom adapters
-      DomainAdapterFactory.registerAdapter('career_coaching', () => new CareerCoachingAdapter());
-      DomainAdapterFactory.registerAdapter('relationship_coaching', () => new RelationshipCoachingAdapter());
+      DomainAdapterFactory.registerAdapter('career_coaching', CareerCoachingAdapter);
+      DomainAdapterFactory.registerAdapter('relationship_coaching', RelationshipCoachingAdapter);
 
       const careerAdapter = DomainAdapterFactory.getAdapter('career_coaching');
       const relationshipAdapter = DomainAdapterFactory.getAdapter('relationship_coaching');
@@ -428,7 +428,7 @@ describe('Multi-Domain Architecture Validation', () => {
     });
 
     it('should maintain adapter instances (singleton pattern)', () => {
-      DomainAdapterFactory.registerAdapter('career_coaching', () => new CareerCoachingAdapter());
+      DomainAdapterFactory.registerAdapter('career_coaching', CareerCoachingAdapter);
 
       const adapter1 = DomainAdapterFactory.getAdapter('career_coaching');
       const adapter2 = DomainAdapterFactory.getAdapter('career_coaching');
@@ -439,8 +439,8 @@ describe('Multi-Domain Architecture Validation', () => {
 
   describe('Domain-Specific Query Enhancement', () => {
     beforeEach(() => {
-      DomainAdapterFactory.registerAdapter('career_coaching', () => new CareerCoachingAdapter());
-      DomainAdapterFactory.registerAdapter('relationship_coaching', () => new RelationshipCoachingAdapter());
+      DomainAdapterFactory.registerAdapter('career_coaching', CareerCoachingAdapter);
+      DomainAdapterFactory.registerAdapter('relationship_coaching', RelationshipCoachingAdapter);
     });
 
     it('should enhance queries differently for different domains', () => {
@@ -450,35 +450,35 @@ describe('Multi-Domain Architecture Validation', () => {
       const careerQuery = 'I need help with my career advancement and job search';
       const relationshipQuery = 'I need help with communication in my relationship';
 
-      const careerRagContext = { originalQuery: careerQuery, domainId: 'career_coaching' };
-      const relationshipRagContext = { originalQuery: relationshipQuery, domainId: 'relationship_coaching' };
+      const careerRagContext = { originalQuery: careerQuery, domainId: 'career_coaching', sessionId: 'test-session-1' };
+      const relationshipRagContext = { originalQuery: relationshipQuery, domainId: 'relationship_coaching', sessionId: 'test-session-2' };
 
       const careerEnhancement = careerAdapter.enhanceQuery(careerQuery, careerRagContext);
       const relationshipEnhancement = relationshipAdapter.enhanceQuery(relationshipQuery, relationshipRagContext);
 
       // Career enhancement should include career-specific context
       expect(careerEnhancement.addedContext).toContain('career_stage:mid_level');
-      expect(careerEnhancement.careerSpecific).toBeDefined();
-      expect(careerEnhancement.careerSpecific.careerKeywords).toContain('job search');
+      expect((careerEnhancement as any).careerSpecific).toBeDefined();
+      expect((careerEnhancement as any).careerSpecific?.careerKeywords).toContain('job search');
 
       // Relationship enhancement should include relationship-specific context
       expect(relationshipEnhancement.addedContext).toContain('relationship_type:romantic');
       expect(relationshipEnhancement.addedContext).toContain('communication_focus:emotional_expression');
-      expect(relationshipEnhancement.relationshipSpecific).toBeDefined();
-      expect(relationshipEnhancement.relationshipSpecific.relationshipKeywords).toContain('communication');
+      expect((relationshipEnhancement as any).relationshipSpecific).toBeDefined();
+      expect((relationshipEnhancement as any).relationshipSpecific?.relationshipKeywords).toContain('communication');
     });
 
     it('should apply domain-specific keyword detection', () => {
       const careerAdapter = DomainAdapterFactory.getAdapter('career_coaching');
       
       const careerQuery = 'I need help with salary negotiation and networking for my promotion';
-      const ragContext = { originalQuery: careerQuery, domainId: 'career_coaching' };
+      const ragContext = { originalQuery: careerQuery, domainId: 'career_coaching', sessionId: 'test-session-3' };
 
       const enhancement = careerAdapter.enhanceQuery(careerQuery, ragContext);
 
-      expect(enhancement.careerSpecific.careerKeywords).toContain('promotion');
-      expect(enhancement.careerSpecific.careerKeywords).toContain('networking');
-      expect(enhancement.careerSpecific.careerKeywords).toContain('salary negotiation');
+      expect((enhancement as any).careerSpecific?.careerKeywords).toContain('promotion');
+      expect((enhancement as any).careerSpecific?.careerKeywords).toContain('networking');
+      expect((enhancement as any).careerSpecific?.careerKeywords).toContain('salary negotiation');
     });
 
     it('should detect domain-specific contexts accurately', () => {
@@ -487,24 +487,24 @@ describe('Multi-Domain Architecture Validation', () => {
       const familyQuery = 'I have conflicts with my family members and need boundary setting help';
       const romanticQuery = 'My partner and I struggle with intimacy and trust issues';
 
-      const familyRagContext = { originalQuery: familyQuery, domainId: 'relationship_coaching' };
-      const romanticRagContext = { originalQuery: romanticQuery, domainId: 'relationship_coaching' };
+      const familyRagContext = { originalQuery: familyQuery, domainId: 'relationship_coaching', sessionId: 'test-session-4' };
+      const romanticRagContext = { originalQuery: romanticQuery, domainId: 'relationship_coaching', sessionId: 'test-session-5' };
 
       const familyEnhancement = relationshipAdapter.enhanceQuery(familyQuery, familyRagContext);
       const romanticEnhancement = relationshipAdapter.enhanceQuery(romanticQuery, romanticRagContext);
 
-      expect(familyEnhancement.relationshipSpecific.relationshipType).toBe('family');
-      expect(familyEnhancement.relationshipSpecific.communicationFocus).toBe('boundary_setting');
+      expect((familyEnhancement as any).relationshipSpecific?.relationshipType).toBe('family');
+      expect((familyEnhancement as any).relationshipSpecific?.communicationFocus).toBe('boundary_setting');
 
-      expect(romanticEnhancement.relationshipSpecific.relationshipType).toBe('romantic');
-      expect(romanticEnhancement.relationshipSpecific.communicationFocus).toBe('emotional_expression');
+      expect((romanticEnhancement as any).relationshipSpecific?.relationshipType).toBe('romantic');
+      expect((romanticEnhancement as any).relationshipSpecific?.communicationFocus).toBe('emotional_expression');
     });
   });
 
   describe('Domain-Specific Result Filtering', () => {
     beforeEach(() => {
-      DomainAdapterFactory.registerAdapter('career_coaching', () => new CareerCoachingAdapter());
-      DomainAdapterFactory.registerAdapter('relationship_coaching', () => new RelationshipCoachingAdapter());
+      DomainAdapterFactory.registerAdapter('career_coaching', CareerCoachingAdapter);
+      DomainAdapterFactory.registerAdapter('relationship_coaching', RelationshipCoachingAdapter);
     });
 
     it('should apply different filtering rules for different domains', () => {
@@ -592,7 +592,7 @@ describe('Multi-Domain Architecture Validation', () => {
         };
       }
 
-      protected filterKnowledgeForRole(knowledgeResults: any[], ragContext: any): any[] {
+      protected filterKnowledgeForRole(knowledgeResults: any[], _ragContext: any): any[] {
         return knowledgeResults.filter(result => 
           result.document.category === 'methodologies' ||
           result.content.toLowerCase().includes('career') ||
@@ -621,7 +621,7 @@ describe('Multi-Domain Architecture Validation', () => {
         };
       }
 
-      protected filterKnowledgeForRole(knowledgeResults: any[], ragContext: any): any[] {
+      protected filterKnowledgeForRole(knowledgeResults: any[], _ragContext: any): any[] {
         return knowledgeResults.filter(result => 
           result.document.category === 'methodologies' ||
           result.content.toLowerCase().includes('relationship') ||
@@ -636,8 +636,8 @@ describe('Multi-Domain Architecture Validation', () => {
       jest.spyOn(ragFoundationService, 'isReady').mockReturnValue(true);
       
       // Register domain adapters
-      DomainAdapterFactory.registerAdapter('career_coaching', () => new CareerCoachingAdapter());
-      DomainAdapterFactory.registerAdapter('relationship_coaching', () => new RelationshipCoachingAdapter());
+      DomainAdapterFactory.registerAdapter('career_coaching', CareerCoachingAdapter);
+      DomainAdapterFactory.registerAdapter('relationship_coaching', RelationshipCoachingAdapter);
     });
 
     it('should use different domain adapters for different agents', async () => {
@@ -743,8 +743,8 @@ describe('Multi-Domain Architecture Validation', () => {
     });
 
     it('should handle domain switching without cross-contamination', () => {
-      DomainAdapterFactory.registerAdapter('career_coaching', () => new CareerCoachingAdapter());
-      DomainAdapterFactory.registerAdapter('relationship_coaching', () => new RelationshipCoachingAdapter());
+      DomainAdapterFactory.registerAdapter('career_coaching', CareerCoachingAdapter);
+      DomainAdapterFactory.registerAdapter('relationship_coaching', RelationshipCoachingAdapter);
 
       const careerAdapter1 = DomainAdapterFactory.getAdapter('career_coaching');
       const relationshipAdapter = DomainAdapterFactory.getAdapter('relationship_coaching');
@@ -762,8 +762,8 @@ describe('Multi-Domain Architecture Validation', () => {
     });
 
     it('should support dynamic domain detection and switching', () => {
-      DomainAdapterFactory.registerAdapter('career_coaching', () => new CareerCoachingAdapter());
-      DomainAdapterFactory.registerAdapter('relationship_coaching', () => new RelationshipCoachingAdapter());
+      DomainAdapterFactory.registerAdapter('career_coaching', CareerCoachingAdapter);
+      DomainAdapterFactory.registerAdapter('relationship_coaching', RelationshipCoachingAdapter);
 
       const detectDomain = (userInput: UserInput): string => {
         const content = userInput.mentalState.toLowerCase();

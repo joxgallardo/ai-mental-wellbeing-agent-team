@@ -17,13 +17,13 @@ config();
 const ProductionConfigSchema = z.object({
   // Application
   NODE_ENV: z.enum(['development', 'staging', 'production']).default('production'),
-  PORT: z.string().transform(Number).default(3000),
+  PORT: z.string().transform(Number).default('3000'),
   API_VERSION: z.string().default('v1'),
   
   // Database
   DATABASE_URL: z.string().url(),
-  DATABASE_POOL_SIZE: z.string().transform(Number).default(20),
-  DATABASE_SSL: z.enum(['true', 'false']).transform(Boolean).default(true),
+  DATABASE_POOL_SIZE: z.string().transform(Number).default('20'),
+  DATABASE_SSL: z.enum(['true', 'false']).transform(Boolean).default('true'),
   
   // Supabase (Vector Database)
   SUPABASE_URL: z.string().url(),
@@ -33,8 +33,8 @@ const ProductionConfigSchema = z.object({
   // OpenAI
   OPENAI_API_KEY: z.string(),
   OPENAI_MODEL: z.string().default('gpt-4-turbo-preview'),
-  OPENAI_MAX_TOKENS: z.string().transform(Number).default(2000),
-  OPENAI_TEMPERATURE: z.string().transform(Number).default(0.7),
+  OPENAI_MAX_TOKENS: z.string().transform(Number).default('2000'),
+  OPENAI_TEMPERATURE: z.string().transform(Number).default('0.7'),
   
   // Telegram Bot
   TELEGRAM_BOT_TOKEN: z.string(),
@@ -46,47 +46,47 @@ const ProductionConfigSchema = z.object({
   CORS_ORIGINS: z.string().default('*'),
   
   // Rate Limiting
-  RATE_LIMIT_WINDOW_MS: z.string().transform(Number).default(900000), // 15 minutes
-  RATE_LIMIT_MAX_REQUESTS: z.string().transform(Number).default(100),
+  RATE_LIMIT_WINDOW_MS: z.string().transform(Number).default('900000'), // 15 minutes
+  RATE_LIMIT_MAX_REQUESTS: z.string().transform(Number).default('100'),
   
   // RAG Configuration
-  RAG_ENABLED: z.enum(['true', 'false']).transform(Boolean).default(true),
-  RAG_CHUNK_SIZE: z.string().transform(Number).default(1000),
-  RAG_CHUNK_OVERLAP: z.string().transform(Number).default(200),
-  RAG_SIMILARITY_THRESHOLD: z.string().transform(Number).default(0.7),
-  RAG_MAX_RESULTS: z.string().transform(Number).default(5),
+  RAG_ENABLED: z.enum(['true', 'false']).transform(Boolean).default('true'),
+  RAG_CHUNK_SIZE: z.string().transform(Number).default('1000'),
+  RAG_CHUNK_OVERLAP: z.string().transform(Number).default('200'),
+  RAG_SIMILARITY_THRESHOLD: z.string().transform(Number).default('0.7'),
+  RAG_MAX_RESULTS: z.string().transform(Number).default('5'),
   
   // LangGraph Configuration
-  LANGGRAPH_ENABLED: z.enum(['true', 'false']).transform(Boolean).default(true),
-  LANGGRAPH_MAX_RETRIES: z.string().transform(Number).default(3),
-  LANGGRAPH_TIMEOUT_MS: z.string().transform(Number).default(30000),
+  LANGGRAPH_ENABLED: z.enum(['true', 'false']).transform(Boolean).default('true'),
+  LANGGRAPH_MAX_RETRIES: z.string().transform(Number).default('3'),
+  LANGGRAPH_TIMEOUT_MS: z.string().transform(Number).default('30000'),
   
   // Feature Flags
   FEATURE_FLAG_PROVIDER: z.enum(['local', 'remote']).default('local'),
-  FEATURE_FLAG_REFRESH_INTERVAL_MS: z.string().transform(Number).default(60000),
+  FEATURE_FLAG_REFRESH_INTERVAL_MS: z.string().transform(Number).default('60000'),
   
   // Monitoring
-  MONITORING_ENABLED: z.enum(['true', 'false']).transform(Boolean).default(true),
-  METRICS_PORT: z.string().transform(Number).default(9090),
-  HEALTH_CHECK_INTERVAL_MS: z.string().transform(Number).default(30000),
+  MONITORING_ENABLED: z.enum(['true', 'false']).transform(Boolean).default('true'),
+  METRICS_PORT: z.string().transform(Number).default('9090'),
+  HEALTH_CHECK_INTERVAL_MS: z.string().transform(Number).default('30000'),
   
   // Logging
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
   LOG_FORMAT: z.enum(['json', 'text']).default('json'),
-  LOG_FILE_ENABLED: z.enum(['true', 'false']).transform(Boolean).default(true),
+  LOG_FILE_ENABLED: z.enum(['true', 'false']).transform(Boolean).default('true'),
   
   // Cache
   REDIS_URL: z.string().url().optional(),
-  CACHE_TTL_SECONDS: z.string().transform(Number).default(3600),
+  CACHE_TTL_SECONDS: z.string().transform(Number).default('3600'),
   
   // Error Tracking
   SENTRY_DSN: z.string().url().optional(),
-  ERROR_REPORTING_ENABLED: z.enum(['true', 'false']).transform(Boolean).default(true),
+  ERROR_REPORTING_ENABLED: z.enum(['true', 'false']).transform(Boolean).default('true'),
   
   // Performance
-  MAX_CONCURRENT_REQUESTS: z.string().transform(Number).default(100),
-  REQUEST_TIMEOUT_MS: z.string().transform(Number).default(30000),
-  MEMORY_LIMIT_MB: z.string().transform(Number).default(512),
+  MAX_CONCURRENT_REQUESTS: z.string().transform(Number).default('100'),
+  REQUEST_TIMEOUT_MS: z.string().transform(Number).default('30000'),
+  MEMORY_LIMIT_MB: z.string().transform(Number).default('512'),
   
   // Deployment
   DEPLOYMENT_ENVIRONMENT: z.string().default('production'),

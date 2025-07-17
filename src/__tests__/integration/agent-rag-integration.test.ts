@@ -1,10 +1,10 @@
 import { EnhancedBaseAgent } from '../../agents/enhanced-base-agent';
 import { UserInput, AgentContext } from '../../types/index';
 import { ragFoundationService } from '../../services/rag/rag-foundation.service';
-import { knowledgePopulationService } from '../../services/rag/knowledge-population.service';
-import { domainConfigLoaderService } from '../../services/rag/domain-config-loader.service';
+// import { knowledgePopulationService } from '../../services/rag/knowledge-population.service';
+// import { domainConfigLoaderService } from '../../services/rag/domain-config-loader.service';
 import { featureFlagService } from '../../services/feature-flag.service';
-import { lifeCoachingKnowledgeBase } from '../../data/knowledge-base/life-coaching-knowledge';
+// import { lifeCoachingKnowledgeBase } from '../../data/knowledge-base/life-coaching-knowledge';
 
 /**
  * Integration Tests for Agent-RAG System
@@ -43,7 +43,7 @@ class TestAssessmentAgent extends EnhancedBaseAgent {
     };
   }
 
-  protected filterKnowledgeForRole(knowledgeResults: any[], ragContext: any): any[] {
+  protected filterKnowledgeForRole(knowledgeResults: any[], _ragContext: any): any[] {
     // Filter for assessment-relevant knowledge
     return knowledgeResults.filter(result => 
       result.document.category === 'assessment_tools' ||
@@ -87,6 +87,7 @@ describe('Agent-RAG Integration Tests', () => {
       sessionId: 'integration-test-session-123',
       userId: 'test-user-456',
       previousResponses: [],
+      userInput: mockUserInput,
     };
   });
 
@@ -636,10 +637,19 @@ export function createTestInput(overrides: Partial<UserInput> = {}): UserInput {
 }
 
 export function createTestContext(overrides: Partial<AgentContext> = {}): AgentContext {
+  const defaultUserInput: UserInput = {
+    mentalState: 'feeling stressed',
+    sleepPattern: 6,
+    stressLevel: 5,
+    supportSystem: ['family'],
+    currentSymptoms: ['stress'],
+  };
+
   return {
     sessionId: 'test-session-id',
     userId: 'test-user-id',
     previousResponses: [],
+    userInput: defaultUserInput,
     ...overrides,
   };
 }

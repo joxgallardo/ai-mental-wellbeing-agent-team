@@ -52,7 +52,7 @@ class EnhancedAssessmentAgent extends EnhancedBaseAgent {
     };
   }
 
-  protected filterKnowledgeForRole(knowledgeResults: any[], ragContext: any): any[] {
+  protected filterKnowledgeForRole(knowledgeResults: any[], _ragContext: any): any[] {
     return knowledgeResults.filter(result => 
       result.document.category === 'assessment_tools' ||
       result.document.category === 'methodologies' ||
@@ -83,7 +83,7 @@ class EnhancedActionAgent extends EnhancedBaseAgent {
     };
   }
 
-  protected filterKnowledgeForRole(knowledgeResults: any[], ragContext: any): any[] {
+  protected filterKnowledgeForRole(knowledgeResults: any[], _ragContext: any): any[] {
     return knowledgeResults.filter(result => 
       result.document.category === 'best_practices' ||
       result.document.category === 'methodologies' ||
@@ -115,7 +115,7 @@ class EnhancedFollowUpAgent extends EnhancedBaseAgent {
     };
   }
 
-  protected filterKnowledgeForRole(knowledgeResults: any[], ragContext: any): any[] {
+  protected filterKnowledgeForRole(knowledgeResults: any[], _ragContext: any): any[] {
     return knowledgeResults.filter(result => 
       result.document.category === 'best_practices' ||
       result.content.toLowerCase().includes('support') ||
@@ -182,7 +182,7 @@ describe('System Integration Validation', () => {
         private actionAgent = new EnhancedActionAgent();
         private followUpAgent = new EnhancedFollowUpAgent();
 
-        async coordinateSession(input: UserInput, context: AgentContext) {
+        async coordinateSession(input: UserInput, _context: AgentContext) {
           const sessionId = context.sessionId;
           
           // Process with each agent in sequence (existing pattern)

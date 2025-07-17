@@ -75,7 +75,7 @@ export class LifeCoachingAdapter extends BaseDomainAdapter {
   /**
    * Enhance query with life coaching context
    */
-  enhanceQuery(query: string, context: DomainContext): QueryEnhancementResult {
+  override enhanceQuery(query: string, context: DomainContext): QueryEnhancementResult {
     const originalQuery = query;
     let enhancedQuery = query;
     const addedContext: string[] = [];
@@ -153,7 +153,7 @@ export class LifeCoachingAdapter extends BaseDomainAdapter {
   /**
    * Filter and score results based on life coaching criteria
    */
-  filterResults(results: SearchResult[], context: DomainContext): FilteredResult[] {
+  override filterResults(results: SearchResult[], context: DomainContext): FilteredResult[] {
     const rules = this.getFilteringRules();
     const minRelevanceScore = rules.minimum_relevance_score || 0.6;
     
@@ -318,7 +318,7 @@ export class LifeCoachingAdapter extends BaseDomainAdapter {
     }
 
     // Methodology match
-    if (context.preferredMethodology && result.metadata.methodology === context.preferredMethodology) {
+    if (context.preferredMethodology && result.metadata['methodology'] === context.preferredMethodology) {
       reasons.push('methodology_match');
     }
 
@@ -329,12 +329,12 @@ export class LifeCoachingAdapter extends BaseDomainAdapter {
     }
 
     // Complexity match
-    if (context.complexityLevel && result.metadata.complexity_level === context.complexityLevel) {
+    if (context.complexityLevel && result.metadata['complexity_level'] === context.complexityLevel) {
       reasons.push('complexity_match');
     }
 
     // Evidence level
-    if (result.metadata.evidence_level === 'research-based') {
+    if (result.metadata['evidence_level'] === 'research-based') {
       reasons.push('high_evidence_level');
     }
 

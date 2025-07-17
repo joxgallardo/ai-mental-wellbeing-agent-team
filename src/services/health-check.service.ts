@@ -68,8 +68,8 @@ export class HealthCheckService {
     const checks: Record<string, ComponentHealth> = {};
 
     // Check essential components only
-    checks.application = await this.checkApplication();
-    checks.memory = await this.checkMemory();
+    checks['application'] = await this.checkApplication();
+    checks['memory'] = await this.checkMemory();
 
     const overallStatus = this.calculateOverallStatus(checks);
 
@@ -106,15 +106,17 @@ export class HealthCheckService {
 
     results.forEach((result, index) => {
       const checkName = checkNames[index];
-      if (result.status === 'fulfilled') {
-        checks[checkName] = result.value;
-      } else {
-        checks[checkName] = {
-          status: 'unhealthy',
-          responseTime: 0,
-          message: result.reason?.message || 'Check failed',
-          lastChecked: new Date().toISOString(),
-        };
+      if (checkName) {
+        if (result.status === 'fulfilled') {
+          checks[checkName] = result.value;
+        } else {
+          checks[checkName] = {
+            status: 'unhealthy',
+            responseTime: 0,
+            message: result.reason?.message || 'Check failed',
+            lastChecked: new Date().toISOString(),
+          };
+        }
       }
     });
 
@@ -137,8 +139,8 @@ export class HealthCheckService {
     const checks: Record<string, ComponentHealth> = {};
 
     // Quick checks only
-    checks.memory = await this.checkMemory();
-    checks.cpu = await this.checkCPU();
+    checks['memory'] = await this.checkMemory();
+    checks['cpu'] = await this.checkCPU();
 
     const overallStatus = this.calculateOverallStatus(checks);
 

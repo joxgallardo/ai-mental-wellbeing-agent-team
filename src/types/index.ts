@@ -24,6 +24,13 @@ export interface AgentContext {
   previousResponses?: AgentResponse[];
   userInput: UserInput;
   sessionId: string;
+  userId?: string;
+  metadata?: Record<string, any>;
+  ragContext?: {
+    domain: string;
+    relevantDocuments: any[];
+    searchQuery: string;
+  };
 }
 
 export interface AgentResponse {
@@ -33,6 +40,14 @@ export interface AgentResponse {
   riskLevel?: 'low' | 'medium' | 'high';
   urgency?: 'low' | 'medium' | 'high';
   timestamp: Date;
+  ragMetadata?: {
+    useRag: boolean;
+    queryEnhanced?: boolean;
+    knowledgeUsed?: boolean;
+    domainSpecific?: boolean;
+    contextualFactors?: string[];
+    qualityScore?: number;
+  };
 }
 
 // Assessment specific types
@@ -138,5 +153,10 @@ export interface MentalHealthPlan {
     keyInsights: string[];
     immediateNextSteps: string[];
     longTermGoals: string[];
+  };
+  metadata?: {
+    complexity: string;
+    domain: string;
+    confidence: number;
   };
 } 

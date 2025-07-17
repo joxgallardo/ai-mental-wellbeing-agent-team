@@ -942,11 +942,11 @@ export class DocumentProcessorService {
         (qualityDistribution[qualityBucket.toString()] || 0) + 1;
 
       // Complexity distribution
-      const complexity = chunk.metadata.complexity_level || 'unknown';
+      const complexity = chunk.metadata['complexity_level'] || 'unknown';
       complexityDistribution[complexity] = (complexityDistribution[complexity] || 0) + 1;
 
       // Methodology distribution
-      const methodology = chunk.metadata.methodology || 'unknown';
+      const methodology = chunk.metadata['methodology'] || 'unknown';
       methodologyDistribution[methodology] = (methodologyDistribution[methodology] || 0) + 1;
     });
 

@@ -556,9 +556,9 @@ describe('DomainConfigLoaderService', () => {
       const result = await service.loadDomainConfig('test_domain');
       
       expect(result.config.filtering_rules.minimum_relevance_score).toBe(0.8);
-      expect(result.config.filtering_rules.boost_factors.methodology_match).toBe(1.3);
-      expect(result.config.filtering_rules.boost_factors.life_area_match).toBe(1.15);
-      expect(result.config.filtering_rules.penalty_factors.complexity_mismatch).toBe(0.9);
+      expect(result.config.filtering_rules.boost_factors['methodology_match']).toBe(1.3);
+      expect(result.config.filtering_rules.boost_factors['life_area_match']).toBe(1.15);
+      expect(result.config.filtering_rules.penalty_factors['complexity_mismatch']).toBe(0.9);
     });
   });
 
