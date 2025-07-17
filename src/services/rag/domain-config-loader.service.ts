@@ -138,7 +138,7 @@ export class DomainConfigLoaderService {
       this.logger.error('Failed to load domain configuration', {
         domainName,
         loadTime,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error instanceof Error ? error.message : String(error) : 'Unknown error',
       });
 
       throw new DomainConfigError(
@@ -168,7 +168,7 @@ export class DomainConfigLoaderService {
         } catch (error) {
           this.logger.error('Failed to load domain configuration', {
             domainName,
-            error: error instanceof Error ? error.message : 'Unknown error',
+            error: error instanceof Error ? error instanceof Error ? error.message : String(error) : 'Unknown error',
           });
         }
       }
@@ -176,7 +176,7 @@ export class DomainConfigLoaderService {
       return results;
     } catch (error) {
       this.logger.error('Failed to load all domain configurations', {
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error instanceof Error ? error.message : String(error) : 'Unknown error',
       });
       throw error;
     }
@@ -233,7 +233,7 @@ export class DomainConfigLoaderService {
       return domains;
     } catch (error) {
       this.logger.error('Failed to get available domains', {
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error instanceof Error ? error.message : String(error) : 'Unknown error',
       });
       return [];
     }
@@ -301,11 +301,9 @@ export class DomainConfigLoaderService {
       ];
       
       for (const weight of personalizedWeights) {
-        if (config.personalization[weight] !== undefined) {
-          const value = config.personalization[weight];
-          if (value < 0 || value > 1) {
-            errors.push(`${weight} must be between 0 and 1`);
-          }
+        const value = config.personalization[weight as keyof typeof config.personalization];
+        if (typeof value === 'number' && (value < 0 || value > 1)) {
+          errors.push(`${weight} must be between 0 and 1`);
         }
       }
     }
@@ -425,7 +423,7 @@ export class DomainConfigLoaderService {
       this.logger.warn('Failed to apply environment overrides', {
         domainName,
         environment,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error instanceof Error ? error.message : String(error) : 'Unknown error',
       });
       return baseConfig;
     }
@@ -512,7 +510,7 @@ export class DomainConfigLoaderService {
         this.logger.error('Error checking configuration file', {
           domainName,
           configPath,
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: error instanceof Error ? error instanceof Error ? error.message : String(error) : 'Unknown error',
         });
       }
     }, 5000); // Check every 5 seconds

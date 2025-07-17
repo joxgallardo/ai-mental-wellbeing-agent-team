@@ -20,6 +20,7 @@
     "type-check": "tsc --noEmit",
     "optimize": "npm run clean && npm run build && npm run lint:fix",
     "migrate:up": "NODE_OPTIONS=\"--loader ts-node/esm\" ts-node --esm scripts/migrate-database.ts up",
+    "migrate:setup": "echo 'Please create exec_sql function in Supabase dashboard first, then run: npm run migrate:up'",
     "migrate:down": "NODE_OPTIONS=\"--loader ts-node/esm\" ts-node --esm scripts/migrate-database.ts down",
     "migrate:reset": "NODE_OPTIONS=\"--loader ts-node/esm\" ts-node --esm scripts/migrate-database.ts reset",
     "migrate:seed": "NODE_OPTIONS=\"--loader ts-node/esm\" ts-node --esm scripts/migrate-database.ts seed",

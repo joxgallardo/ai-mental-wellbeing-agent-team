@@ -87,7 +87,7 @@ describe('Agent-RAG Integration Tests', () => {
       sessionId: 'integration-test-session-123',
       userId: 'test-user-456',
       previousResponses: [],
-      userInput: mockUserInput,
+      userInput: mockInput,
     };
   });
 

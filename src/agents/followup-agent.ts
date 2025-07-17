@@ -8,11 +8,10 @@ export class FollowUpAgent extends EnhancedBaseAgent {
       'followup_agent',
       'Mental Health Recovery Planner',
       agentSystemMessages.followUp,
-      { 
+            {
         ragEnabled: true, 
         hybridSearchEnabled: true,
-        focusArea: 'recovery',
-        domainSpecific: true 
+        focusArea: 'followup'
       }
     );
   }
@@ -101,7 +100,7 @@ export class FollowUpAgent extends EnhancedBaseAgent {
     return 'long_term'; // 3-12 months
   }
 
-  async process(input: UserInput, context?: AgentContext): Promise<FollowUpResponse> {
+  override async process(input: UserInput, context?: AgentContext): Promise<FollowUpResponse> {
     this.logger.info('Starting follow-up strategy generation', {
       sessionId: context?.sessionId,
     });

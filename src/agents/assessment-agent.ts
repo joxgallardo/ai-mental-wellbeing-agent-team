@@ -8,11 +8,10 @@ export class AssessmentAgent extends EnhancedBaseAgent {
       'assessment_agent',
       'Mental Health Assessment Specialist',
       agentSystemMessages.assessment,
-      { 
+            {
         ragEnabled: true, 
         hybridSearchEnabled: true,
-        focusArea: 'assessment',
-        domainSpecific: true 
+        focusArea: 'assessment'
       }
     );
   }
@@ -105,7 +104,7 @@ export class AssessmentAgent extends EnhancedBaseAgent {
     return [...new Set([...emotions, ...symptomsEmotions])];
   }
 
-  async process(input: UserInput, context?: AgentContext): Promise<AssessmentResponse> {
+  override async process(input: UserInput, context?: AgentContext): Promise<AssessmentResponse> {
     this.logger.info('Starting assessment process', {
       sessionId: context?.sessionId,
     });

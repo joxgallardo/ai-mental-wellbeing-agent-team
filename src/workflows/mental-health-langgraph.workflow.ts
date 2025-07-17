@@ -5,7 +5,6 @@
  * Integrates RAG context, domain detection, and intelligent routing for optimal user experience.
  */
 
-import { StateGraph, END, CompiledStateGraph } from '@langchain/langgraph';
 import { UserInput, AgentContext, AgentResponse } from '../types/index';
 import { EnhancedBaseAgent } from '../agents/enhanced-base-agent';
 import { ragFoundationService } from '../services/rag/rag-foundation.service';
@@ -71,6 +70,10 @@ class WorkflowAssessmentAgent extends EnhancedBaseAgent {
     );
   }
 
+  override async process(input: UserInput, context?: AgentContext): Promise<AgentResponse> {
+    return await this.processStandard(input, context);
+  }
+
   protected override customizeRAGContext(ragContext: any, input: UserInput, _context?: AgentContext): any {
     return {
       ...ragContext,
@@ -90,7 +93,7 @@ class WorkflowAssessmentAgent extends EnhancedBaseAgent {
     );
   }
 
-  override detectComplexityLevel(input: UserInput): string {
+  override detectComplexityLevel(input: UserInput): 'beginner' | 'intermediate' | 'advanced' {
     const symptoms = input.currentSymptoms?.length || 0;
     const stressLevel = input.stressLevel || 0;
     
@@ -125,6 +128,10 @@ class WorkflowActionAgent extends EnhancedBaseAgent {
       5. Integrate evidence-based interventions from knowledge base`,
       { ragEnabled: true, hybridSearchEnabled: true, performanceMonitoring: true }
     );
+  }
+
+  override async process(input: UserInput, context?: AgentContext): Promise<AgentResponse> {
+    return await this.processStandard(input, context);
   }
 
   protected override customizeRAGContext(ragContext: any, input: UserInput, context?: AgentContext): any {
@@ -192,10 +199,16 @@ class WorkflowActionAgent extends EnhancedBaseAgent {
   }
 
   private detectTimeframe(input: UserInput): string {
-    const stressLevel = input.stressLevel || 0;
-    if (stressLevel >= 8) return 'immediate'; // 1-2 weeks
-    if (stressLevel >= 6) return 'short_term'; // 1-2 months
-    return 'medium_term'; // 3-6 months
+    if (input.mentalState.toLowerCase().includes('urgent') || input.mentalState.toLowerCase().includes('immediate')) {
+      return 'immediate';
+    }
+    if (input.mentalState.toLowerCase().includes('short') || input.mentalState.toLowerCase().includes('week')) {
+      return 'short_term';
+    }
+    if (input.mentalState.toLowerCase().includes('long') || input.mentalState.toLowerCase().includes('month')) {
+      return 'long_term';
+    }
+    return 'medium_term';
   }
 }
 
@@ -206,24 +219,29 @@ class WorkflowFollowUpAgent extends EnhancedBaseAgent {
   constructor() {
     super(
       'WorkflowFollowUpAgent',
-      'Follow-up and Support Specialist',
-      `You are a follow-up and support specialist. Your role is to:
-      1. Create comprehensive long-term support strategies
-      2. Provide ongoing motivation and accountability systems
-      3. Suggest resources, tools, and community support
-      4. Plan check-ins and progress review schedules
-      5. Ensure sustainable habit formation and maintenance`,
+      'Follow-Up Planning Specialist',
+      `You are a follow-up planning specialist. Your role is to:
+      1. Create sustainable long-term strategies for mental wellness
+      2. Design maintenance and prevention plans
+      3. Establish support systems and accountability mechanisms
+      4. Provide relapse prevention strategies
+      5. Integrate ongoing monitoring and adjustment recommendations`,
       { ragEnabled: true, hybridSearchEnabled: true, performanceMonitoring: true }
     );
   }
 
+  override async process(input: UserInput, context?: AgentContext): Promise<AgentResponse> {
+    return await this.processStandard(input, context);
+  }
+
   protected override customizeRAGContext(ragContext: any, input: UserInput, context?: AgentContext): any {
+    // Extract insights from previous responses
     const actionInsights = this.extractActionInsights(context);
     
     return {
       ...ragContext,
-      preferredMethodology: 'Values Clarification',
-      focusArea: 'long_term_support',
+      preferredMethodology: 'Maintenance Planning',
+      focusArea: 'follow_up_planning',
       supportType: this.detectSupportType(input),
       maintenanceStrategy: this.detectMaintenanceStrategy(input),
       actionInsights,
@@ -232,19 +250,18 @@ class WorkflowFollowUpAgent extends EnhancedBaseAgent {
 
   protected override filterKnowledgeForRole(knowledgeResults: any[], _ragContext: any): any[] {
     return knowledgeResults.filter(result => 
-      result.document.category === 'best_practices' ||
-      result.content.toLowerCase().includes('support') ||
+      result.document.category === 'resources' ||
+      result.document.category === 'templates' ||
+      result.content.toLowerCase().includes('maintenance') ||
       result.content.toLowerCase().includes('follow') ||
-      result.content.toLowerCase().includes('maintain') ||
-      result.content.toLowerCase().includes('habit') ||
-      result.content.toLowerCase().includes('accountability')
+      result.content.toLowerCase().includes('support')
     );
   }
 
   private extractActionInsights(context?: AgentContext): any {
-    if (!context?.previousResponses || context.previousResponses.length < 2) return null;
+    if (!context?.previousResponses?.length) return null;
     
-    const actionResponse = context.previousResponses[1];
+    const actionResponse = context.previousResponses[1]; // Second response is action
     if (!actionResponse) return null;
     
     return {
@@ -254,355 +271,146 @@ class WorkflowFollowUpAgent extends EnhancedBaseAgent {
   }
 
   private extractPlannedActions(content: string): string[] {
-    // Extract action items from the action agent's response
+    // Simple extraction - in production, use more sophisticated parsing
     const actions = [];
-    if (content.toLowerCase().includes('exercise')) actions.push('regular_exercise');
+    if (content.toLowerCase().includes('exercise')) actions.push('physical_activity');
     if (content.toLowerCase().includes('meditation')) actions.push('mindfulness_practice');
-    if (content.toLowerCase().includes('sleep')) actions.push('sleep_hygiene');
-    if (content.toLowerCase().includes('boundary')) actions.push('boundary_setting');
+    if (content.toLowerCase().includes('therapy')) actions.push('professional_support');
+    if (content.toLowerCase().includes('journal')) actions.push('self_reflection');
     return actions;
   }
 
   private extractTimeline(content: string): string {
-    if (content.toLowerCase().includes('week')) return 'weekly';
-    if (content.toLowerCase().includes('month')) return 'monthly';
+    if (content.toLowerCase().includes('daily')) return 'daily';
+    if (content.toLowerCase().includes('weekly')) return 'weekly';
+    if (content.toLowerCase().includes('monthly')) return 'monthly';
     return 'flexible';
   }
 
   private detectSupportType(input: UserInput): string {
     const supportSystem = input.supportSystem || [];
-    if (supportSystem.length >= 3) return 'community_based';
-    if (supportSystem.length >= 1) return 'relationship_based';
+    if (supportSystem.includes('professional')) return 'professional';
+    if (supportSystem.includes('family')) return 'family';
+    if (supportSystem.includes('friends')) return 'peer';
     return 'self_directed';
   }
 
   private detectMaintenanceStrategy(input: UserInput): string {
-    const stressLevel = input.stressLevel || 0;
-    if (stressLevel >= 8) return 'intensive_monitoring';
-    if (stressLevel >= 6) return 'regular_checkins';
-    return 'milestone_based';
+    if (input.mentalState.toLowerCase().includes('prevent')) return 'preventive';
+    if (input.mentalState.toLowerCase().includes('maintain')) return 'maintenance';
+    if (input.mentalState.toLowerCase().includes('improve')) return 'improvement';
+    return 'balanced';
   }
 }
 
 /**
- * Mental Health LangGraph Workflow
+ * Simplified Mental Health Workflow
+ * 
+ * Note: This is a simplified version that doesn't use LangGraph's complex state management.
+ * For production use, consider implementing a proper state machine or workflow engine.
  */
 export class MentalHealthWorkflow {
-  private workflow: CompiledStateGraph<WorkflowState, Partial<WorkflowState>, "domainDetection" | "assessment" | "action" | "followUp" | "__end__">;
   private assessmentAgent = new WorkflowAssessmentAgent();
   private actionAgent = new WorkflowActionAgent();
   private followUpAgent = new WorkflowFollowUpAgent();
 
   constructor() {
-    this.workflow = this.createWorkflow();
+    logger.info('Mental Health Workflow initialized');
   }
 
   /**
-   * Create the LangGraph workflow
+   * Execute the complete mental health workflow
    */
-  private createWorkflow(): CompiledStateGraph<WorkflowState, Partial<WorkflowState>, "domainDetection" | "assessment" | "action" | "followUp" | "__end__"> {
-    const workflow = new StateGraph<WorkflowState>({
-      channels: {
-        userInput: null,
-        context: null,
-        domainDetected: null,
-        ragContext: null,
-        knowledgeResults: null,
-        assessmentResponse: null,
-        actionResponse: null,
-        followUpResponse: null,
-        finalResponse: null,
-        startTime: null,
-        currentAgent: null,
-        error: null,
-        retryCount: null,
-      },
+  async execute(userInput: UserInput, context?: AgentContext): Promise<any> {
+    const startTime = new Date();
+    logger.info('Starting mental health workflow', {
+      sessionId: context?.sessionId,
+      userId: context?.userId,
     });
 
-    // Add nodes
-    workflow.addNode('initialize', this.initializeNode.bind(this));
-    workflow.addNode('domain_detection', this.domainDetectionNode.bind(this));
-    workflow.addNode('rag_context_building', this.ragContextBuildingNode.bind(this));
-    workflow.addNode('enhanced_assessment', this.enhancedAssessmentNode.bind(this));
-    workflow.addNode('enhanced_action', this.enhancedActionNode.bind(this));
-    workflow.addNode('enhanced_followup', this.enhancedFollowUpNode.bind(this));
-    workflow.addNode('response_synthesis', this.responseSynthesisNode.bind(this));
-    workflow.addNode('error_handling', this.errorHandlingNode.bind(this));
+    try {
+      // Step 1: Detect domain
+      const domainDetected = this.detectDomain(userInput);
+      logger.info('Domain detected', { domain: domainDetected });
 
-    // Add edges
-    workflow.setEntryPoint('initialize');
-    
-    workflow.addEdge('initialize', 'domain_detection');
-    workflow.addEdge('domain_detection', 'rag_context_building');
-    workflow.addEdge('rag_context_building', 'enhanced_assessment');
-    workflow.addEdge('enhanced_assessment', 'enhanced_action');
-    workflow.addEdge('enhanced_action', 'enhanced_followup');
-    workflow.addEdge('enhanced_followup', 'response_synthesis');
-    workflow.addEdge('response_synthesis', END);
-    
-    // Error handling edges
-    workflow.addConditionalEdges('enhanced_assessment', this.checkForErrors, {
-      'continue': 'enhanced_action',
-      'error': 'error_handling',
-    });
-    
-    workflow.addConditionalEdges('enhanced_action', this.checkForErrors, {
-      'continue': 'enhanced_followup',
-      'error': 'error_handling',
-    });
-    
-    workflow.addConditionalEdges('enhanced_followup', this.checkForErrors, {
-      'continue': 'response_synthesis',
-      'error': 'error_handling',
-    });
-    
-    workflow.addEdge('error_handling', 'response_synthesis');
+      // Step 2: Build RAG context
+      const ragContext = await this.buildRAGContext(userInput, context, domainDetected);
+      logger.info('RAG context built', { enabled: ragContext.enabled });
 
-    return workflow.compile();
-  }
+      // Step 3: Assessment
+      const assessmentResponse = await this.assessmentAgent.process(userInput, context);
+      logger.info('Assessment completed');
 
-  /**
-   * Initialize workflow state
-   */
-  private async initializeNode(state: WorkflowState): Promise<Partial<WorkflowState>> {
-    logger.info('Initializing mental health workflow', {
-      sessionId: state.context?.sessionId,
-      userId: state.context?.userId,
-    });
+      // Step 4: Action planning
+      const actionContext = {
+        ...context,
+        sessionId: context?.sessionId || 'default-session',
+        previousResponses: [assessmentResponse],
+      };
+      const actionResponse = await this.actionAgent.process(userInput, actionContext);
+      logger.info('Action planning completed');
 
-    return {
-      startTime: new Date(),
-      currentAgent: 'initializing',
-      retryCount: 0,
-    };
+      // Step 5: Follow-up planning
+      const followUpContext = {
+        ...context,
+        sessionId: context?.sessionId || 'default-session',
+        previousResponses: [assessmentResponse, actionResponse],
+      };
+      const followUpResponse = await this.followUpAgent.process(userInput, followUpContext);
+      logger.info('Follow-up planning completed');
+
+      // Step 6: Synthesize final response
+      const processingTime = Date.now() - startTime.getTime();
+      const qualityScore = this.calculateQualityScore({
+        assessmentResponse,
+        actionResponse,
+        followUpResponse,
+        ragContext,
+      });
+
+      const finalResponse = {
+        sessionId: context?.sessionId || 'unknown',
+        assessment: assessmentResponse,
+        action: actionResponse,
+        followUp: followUpResponse,
+        metadata: {
+          workflowVersion: '1.0.0',
+          ragEnabled: ragContext.enabled,
+          processingTime,
+          qualityScore,
+          domainDetected,
+        },
+      };
+
+      logger.info('Workflow completed successfully', {
+        sessionId: finalResponse.sessionId,
+        processingTime,
+        qualityScore,
+      });
+
+      return finalResponse;
+
+    } catch (error) {
+      logger.error('Workflow execution failed', {
+        error: error instanceof Error ? error.message : String(error),
+        sessionId: context?.sessionId,
+      });
+
+      // Return fallback response
+      return await this.generateFallbackResponse(userInput, context, error);
+    }
   }
 
   /**
    * Detect domain for specialized processing
    */
-  private async domainDetectionNode(state: WorkflowState): Promise<Partial<WorkflowState>> {
-    logger.info('Detecting domain for specialized processing');
-
-    // Analyze user input to determine domain
-    const domain = this.detectDomain(state.userInput);
-    
-    return {
-      domainDetected: domain,
-      currentAgent: 'domain_detection',
-    };
-  }
-
-  /**
-   * Build RAG context for enhanced responses
-   */
-  private async ragContextBuildingNode(state: WorkflowState): Promise<Partial<WorkflowState>> {
-    logger.info('Building RAG context');
-
-    try {
-      // Check if RAG is enabled
-      const ragEnabled = ragFoundationService.isEnabled() && ragFoundationService.isReady();
-      const featureEnabled = await featureFlagService.isEnabled('rag_enhancement', {
-        userId: state.context?.userId,
-        sessionId: state.context?.sessionId,
-      });
-
-      if (!ragEnabled || !featureEnabled) {
-        return {
-          ragContext: { enabled: false, reason: 'RAG not available' },
-          currentAgent: 'rag_context_building',
-        };
-      }
-
-      // Build comprehensive RAG context
-      const ragContext = {
-        enabled: true,
-        domainId: state.domainDetected || 'life_coaching',
-        sessionId: state.context?.sessionId,
-        userId: state.context?.userId,
-        userProfile: this.buildUserProfile(state.userInput),
-        contextualFactors: this.extractContextualFactors(state.userInput),
-        priorityAreas: this.identifyPriorityAreas(state.userInput),
-      };
-
-      return {
-        ragContext,
-        currentAgent: 'rag_context_building',
-      };
-
-    } catch (error) {
-      logger.error('Error building RAG context', { error: error.message });
-      return {
-        ragContext: { enabled: false, reason: 'RAG context building failed' },
-        currentAgent: 'rag_context_building',
-      };
-    }
-  }
-
-  /**
-   * Enhanced assessment with RAG integration
-   */
-  private async enhancedAssessmentNode(state: WorkflowState): Promise<Partial<WorkflowState>> {
-    logger.info('Performing enhanced assessment');
-
-    try {
-      const response = await this.assessmentAgent.process(state.userInput, state.context);
-      
-      return {
-        assessmentResponse: response,
-        currentAgent: 'enhanced_assessment',
-      };
-
-    } catch (error) {
-      logger.error('Error in enhanced assessment', { error: error.message });
-      return {
-        error: `Assessment failed: ${error.message}`,
-        currentAgent: 'enhanced_assessment',
-      };
-    }
-  }
-
-  /**
-   * Enhanced action planning with RAG integration
-   */
-  private async enhancedActionNode(state: WorkflowState): Promise<Partial<WorkflowState>> {
-    logger.info('Performing enhanced action planning');
-
-    try {
-      const actionContext = {
-        ...state.context,
-        previousResponses: [state.assessmentResponse!],
-      };
-
-      const response = await this.actionAgent.process(state.userInput, actionContext);
-      
-      return {
-        actionResponse: response,
-        currentAgent: 'enhanced_action',
-      };
-
-    } catch (error) {
-      logger.error('Error in enhanced action planning', { error: error.message });
-      return {
-        error: `Action planning failed: ${error.message}`,
-        currentAgent: 'enhanced_action',
-      };
-    }
-  }
-
-  /**
-   * Enhanced follow-up planning with RAG integration
-   */
-  private async enhancedFollowUpNode(state: WorkflowState): Promise<Partial<WorkflowState>> {
-    logger.info('Performing enhanced follow-up planning');
-
-    try {
-      const followUpContext = {
-        ...state.context,
-        previousResponses: [state.assessmentResponse!, state.actionResponse!],
-      };
-
-      const response = await this.followUpAgent.process(state.userInput, followUpContext);
-      
-      return {
-        followUpResponse: response,
-        currentAgent: 'enhanced_followup',
-      };
-
-    } catch (error) {
-      logger.error('Error in enhanced follow-up planning', { error: error.message });
-      return {
-        error: `Follow-up planning failed: ${error.message}`,
-        currentAgent: 'enhanced_followup',
-      };
-    }
-  }
-
-  /**
-   * Synthesize final response
-   */
-  private async responseSynthesisNode(state: WorkflowState): Promise<Partial<WorkflowState>> {
-    logger.info('Synthesizing final response');
-
-    const processingTime = state.startTime ? Date.now() - state.startTime.getTime() : 0;
-    
-    // Handle error case
-    if (state.error || !state.assessmentResponse || !state.actionResponse || !state.followUpResponse) {
-      const fallbackResponse = await this.generateFallbackResponse(state);
-      return { finalResponse: fallbackResponse };
-    }
-
-    // Calculate quality score
-    const qualityScore = this.calculateQualityScore(state);
-
-    const finalResponse = {
-      sessionId: state.context?.sessionId || 'unknown',
-      assessment: state.assessmentResponse,
-      action: state.actionResponse,
-      followUp: state.followUpResponse,
-      metadata: {
-        workflowVersion: '1.0.0',
-        ragEnabled: state.ragContext?.enabled || false,
-        processingTime,
-        qualityScore,
-      },
-    };
-
-    logger.info('Workflow completed successfully', {
-      sessionId: finalResponse.sessionId,
-      processingTime,
-      qualityScore,
-      ragEnabled: finalResponse.metadata.ragEnabled,
-    });
-
-    return { finalResponse };
-  }
-
-  /**
-   * Error handling node
-   */
-  private async errorHandlingNode(state: WorkflowState): Promise<Partial<WorkflowState>> {
-    logger.error('Handling workflow error', { 
-      error: state.error, 
-      currentAgent: state.currentAgent,
-      retryCount: state.retryCount,
-    });
-
-    const retryCount = (state.retryCount || 0) + 1;
-    
-    if (retryCount >= 3) {
-      logger.error('Maximum retries reached, generating fallback response');
-      const fallbackResponse = await this.generateFallbackResponse(state);
-      return { 
-        finalResponse: fallbackResponse,
-        retryCount,
-      };
-    }
-
-    // For now, proceed to synthesis with partial results
-    return { 
-      retryCount,
-      error: undefined, // Clear error to proceed
-    };
-  }
-
-  /**
-   * Check for errors in agent responses
-   */
-  private checkForErrors(state: WorkflowState): string {
-    return state.error ? 'error' : 'continue';
-  }
-
-  /**
-   * Detect domain from user input
-   */
   private detectDomain(userInput: UserInput): string {
-    // Simple domain detection - in production, use more sophisticated NLP
-    const content = (userInput.mentalState + ' ' + (userInput.currentSymptoms?.join(' ') || '')).toLowerCase();
+    const content = userInput.mentalState.toLowerCase();
     
-    if (content.includes('career') || content.includes('work') || content.includes('job')) {
+    if (content.includes('career') || content.includes('job') || content.includes('work')) {
       return 'career_coaching';
     }
-    if (content.includes('relationship') || content.includes('family') || content.includes('partner')) {
+    if (content.includes('relationship') || content.includes('partner') || content.includes('communication')) {
       return 'relationship_coaching';
     }
     if (content.includes('health') || content.includes('fitness') || content.includes('wellness')) {
@@ -613,115 +421,148 @@ export class MentalHealthWorkflow {
   }
 
   /**
-   * Build user profile for RAG context
+   * Build RAG context for enhanced responses
+   */
+  private async buildRAGContext(userInput: UserInput, context?: AgentContext, domainDetected?: string): Promise<any> {
+    try {
+      // Check if RAG is enabled
+      const ragEnabled = ragFoundationService.isEnabled() && ragFoundationService.isReady();
+      const featureEnabled = await featureFlagService.isEnabled('rag_enhancement', {
+        userId: context?.userId,
+        sessionId: context?.sessionId,
+      });
+
+      if (!ragEnabled || !featureEnabled) {
+        return { enabled: false, reason: 'RAG not available' };
+      }
+
+      // Build comprehensive RAG context
+      return {
+        enabled: true,
+        domainId: domainDetected || 'life_coaching',
+        sessionId: context?.sessionId,
+        userId: context?.userId,
+        userProfile: this.buildUserProfile(userInput),
+        contextualFactors: this.extractContextualFactors(userInput),
+        priorityAreas: this.identifyPriorityAreas(userInput),
+      };
+
+    } catch (error) {
+      logger.error('Error building RAG context', { error: error instanceof Error ? error.message : String(error) });
+      return { enabled: false, reason: 'RAG context building failed' };
+    }
+  }
+
+  /**
+   * Build user profile from input
    */
   private buildUserProfile(userInput: UserInput): any {
     return {
       stressLevel: userInput.stressLevel,
       sleepPattern: userInput.sleepPattern,
-      supportSystemSize: userInput.supportSystem?.length || 0,
-      symptomsCount: userInput.currentSymptoms?.length || 0,
-      hasRecentChanges: !!userInput.recentChanges,
+      supportSystem: userInput.supportSystem,
+      currentSymptoms: userInput.currentSymptoms,
+      recentChanges: userInput.recentChanges,
     };
   }
 
   /**
-   * Extract contextual factors
+   * Extract contextual factors from user input
    */
   private extractContextualFactors(userInput: UserInput): string[] {
     const factors = [];
     
-    if (userInput.stressLevel && userInput.stressLevel >= 7) factors.push('high_stress');
-    if (userInput.sleepPattern && userInput.sleepPattern <= 5) factors.push('sleep_deprivation');
+    if (userInput.stressLevel && userInput.stressLevel > 7) factors.push('high_stress');
+    if (userInput.sleepPattern && userInput.sleepPattern < 6) factors.push('sleep_issues');
     if (userInput.supportSystem && userInput.supportSystem.length === 0) factors.push('limited_support');
-    if (userInput.recentChanges) factors.push('recent_life_changes');
+    if (userInput.currentSymptoms && userInput.currentSymptoms.length > 3) factors.push('multiple_symptoms');
     
     return factors;
   }
 
   /**
-   * Identify priority areas
+   * Identify priority areas for intervention
    */
   private identifyPriorityAreas(userInput: UserInput): string[] {
-    const priorities = [];
+    const areas = [];
     
-    if (userInput.stressLevel && userInput.stressLevel >= 8) priorities.push('stress_management');
-    if (userInput.sleepPattern && userInput.sleepPattern <= 4) priorities.push('sleep_improvement');
-    if (userInput.currentSymptoms?.includes('anxiety')) priorities.push('anxiety_reduction');
-    if (userInput.mentalState.toLowerCase().includes('overwhelm')) priorities.push('workload_management');
+    if (userInput.stressLevel && userInput.stressLevel > 8) areas.push('stress_management');
+    if (userInput.sleepPattern && userInput.sleepPattern < 5) areas.push('sleep_improvement');
+    if (userInput.currentSymptoms?.includes('anxiety')) areas.push('anxiety_reduction');
+    if (userInput.currentSymptoms?.includes('depression')) areas.push('mood_improvement');
     
-    return priorities;
+    return areas;
   }
 
   /**
-   * Calculate quality score for the workflow results
+   * Calculate quality score for the workflow response
    */
-  private calculateQualityScore(state: WorkflowState): number {
+  private calculateQualityScore(state: {
+    assessmentResponse: AgentResponse;
+    actionResponse: AgentResponse;
+    followUpResponse: AgentResponse;
+    ragContext: any;
+  }): number {
     let score = 0.5; // Base score
-    
-    // Add points for RAG usage
-    if (state.ragContext?.enabled) score += 0.2;
-    
-    // Add points for complete agent responses
-    if (state.assessmentResponse?.ragMetadata?.useRag) score += 0.1;
-    if (state.actionResponse?.ragMetadata?.useRag) score += 0.1;
-    if (state.followUpResponse?.ragMetadata?.useRag) score += 0.1;
-    
+
+    // Content quality checks
+    if (state.assessmentResponse.content.length > 100) score += 0.1;
+    if (state.actionResponse.content.length > 100) score += 0.1;
+    if (state.followUpResponse.content.length > 100) score += 0.1;
+
+    // RAG enhancement bonus
+    if (state.ragContext.enabled) score += 0.2;
+
+    // Recommendation quality
+    if (state.assessmentResponse.recommendations.length > 0) score += 0.1;
+    if (state.actionResponse.recommendations.length > 0) score += 0.1;
+
     return Math.min(score, 1.0);
   }
 
   /**
-   * Generate fallback response for error cases
+   * Generate fallback response when workflow fails
    */
-  private async generateFallbackResponse(state: WorkflowState): Promise<any> {
+  private async generateFallbackResponse(userInput: UserInput, context?: AgentContext, error?: any): Promise<any> {
+    logger.warn('Generating fallback response', {
+      error: error instanceof Error ? error.message : String(error),
+      sessionId: context?.sessionId,
+    });
+
+    const fallbackAssessment = {
+      content: 'I understand you\'re going through a challenging time. Let me help you assess your current situation and provide some initial guidance.',
+      recommendations: ['Consider speaking with a mental health professional', 'Practice self-care activities', 'Reach out to your support network'],
+      confidence: 0.7,
+      metadata: { fallback: true },
+    };
+
+    const fallbackAction = {
+      content: 'Based on your situation, I recommend starting with small, manageable steps to improve your mental wellbeing.',
+      recommendations: ['Start with 5-10 minutes of daily meditation', 'Establish a regular sleep schedule', 'Engage in physical activity you enjoy'],
+      confidence: 0.6,
+      metadata: { fallback: true },
+    };
+
+    const fallbackFollowUp = {
+      content: 'Remember that progress takes time and it\'s okay to seek professional help when needed.',
+      recommendations: ['Monitor your progress regularly', 'Adjust strategies as needed', 'Don\'t hesitate to seek professional support'],
+      confidence: 0.5,
+      metadata: { fallback: true },
+    };
+
     return {
-      sessionId: state.context?.sessionId || 'error-session',
-      assessment: state.assessmentResponse || {
-        agentName: 'FallbackAssessment',
-        content: 'I understand you\'re seeking support. Due to technical issues, I\'m providing a basic response.',
-        recommendations: ['Please try again in a few minutes', 'Consider speaking with a mental health professional'],
-        timestamp: new Date(),
-      },
-      action: state.actionResponse || {
-        agentName: 'FallbackAction',
-        content: 'Here are some general immediate steps you can take while we resolve technical issues.',
-        recommendations: ['Take deep breaths', 'Practice grounding techniques', 'Reach out to your support network'],
-        timestamp: new Date(),
-      },
-      followUp: state.followUpResponse || {
-        agentName: 'FallbackFollowUp',
-        content: 'Please return to our service when it\'s fully available for comprehensive support.',
-        recommendations: ['Check back in 30 minutes', 'Contact support if issues persist'],
-        timestamp: new Date(),
-      },
+      sessionId: context?.sessionId || 'unknown',
+      assessment: fallbackAssessment,
+      action: fallbackAction,
+      followUp: fallbackFollowUp,
       metadata: {
-        workflowVersion: '1.0.0-fallback',
+        workflowVersion: '1.0.0',
         ragEnabled: false,
-        processingTime: Date.now() - (state.startTime?.getTime() || Date.now()),
+        processingTime: 0,
         qualityScore: 0.3,
-        error: state.error || 'Unknown workflow error',
+        error: error instanceof Error ? error.message : String(error),
+        fallback: true,
       },
     };
-  }
-
-  /**
-   * Execute the workflow
-   */
-  async execute(userInput: UserInput, context?: AgentContext): Promise<any> {
-    const initialState: WorkflowState = {
-      userInput,
-      context,
-    };
-
-    try {
-      const result = await this.workflow.invoke(initialState);
-      return result.finalResponse;
-    } catch (error) {
-      logger.error('Workflow execution failed', { error: error.message, stack: error.stack });
-      throw error;
-    }
   }
 }
-
-// Export singleton instance
-export const mentalHealthWorkflow = new MentalHealthWorkflow();

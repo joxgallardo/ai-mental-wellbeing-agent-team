@@ -49,9 +49,12 @@ export class AgentCoordinatorService {
         sessionId,
         userInput: validatedInput,
         ragContext: {
+          domain: 'life_coaching',
           domainId: 'life_coaching',
+          relevantDocuments: [],
+          searchQuery: validatedInput.mentalState,
           sessionHistory: [],
-          userPreferences: this.extractUserPreferences(validatedInput),
+          // userPreferences: this.extractUserPreferences(validatedInput),
         }
       });
 
@@ -62,9 +65,12 @@ export class AgentCoordinatorService {
         userInput: validatedInput,
         previousResponses: [assessment],
         ragContext: {
+          domain: 'life_coaching',
           domainId: 'life_coaching',
+          relevantDocuments: [],
+          searchQuery: validatedInput.mentalState,
           assessmentInsights: this.extractAssessmentInsights(assessment),
-          urgencyLevel: assessment.riskLevel,
+          // urgencyLevel: assessment.riskLevel,
         }
       });
 
@@ -75,9 +81,12 @@ export class AgentCoordinatorService {
         userInput: validatedInput,
         previousResponses: [assessment, actionPlan],
         ragContext: {
+          domain: 'life_coaching',
           domainId: 'life_coaching',
+          relevantDocuments: [],
+          searchQuery: validatedInput.mentalState,
           recoveryStage: this.determineRecoveryStage(assessment, actionPlan),
-          planningTimeframe: actionPlan.urgency === 'high' ? 'short_term' : 'medium_term',
+          // planningTimeframe: actionPlan.urgency === 'high' ? 'short_term' : 'medium_term',
         }
       });
 
@@ -91,9 +100,11 @@ export class AgentCoordinatorService {
         followUp,
         summary,
         metadata: {
+          complexity: this.assessComplexity(validatedInput),
+          domain: 'life_coaching',
+          confidence: this.calculateConfidence(assessment, actionPlan, followUp),
           ragEnabled: ragStatus.enabled,
-          ragQuality: ragStatus.ready ? 'high' : 'degraded',
-          processingTime: Date.now(),
+          // ragQuality: ragStatus.ready ? 'high' : 'degraded',
           agentVersions: {
             assessment: 'enhanced-v1',
             action: 'enhanced-v1',
@@ -316,6 +327,49 @@ export class AgentCoordinatorService {
     }
     
     return baseSummary;
+  }
+
+  /**
+   * Assess complexity of user input for metadata
+   */
+  private assessComplexity(input: UserInput): string {
+    const symptomsCount = input.currentSymptoms?.length || 0;
+    const stressLevel = input.stressLevel || 0;
+    const hasRecentChanges = !!input.recentChanges;
+    
+    if (symptomsCount >= 5 || stressLevel >= 8 || hasRecentChanges) {
+      return 'high';
+    }
+    if (symptomsCount >= 3 || stressLevel >= 6) {
+      return 'medium';
+    }
+    return 'low';
+  }
+
+  /**
+   * Calculate confidence score based on agent responses
+   */
+  private calculateConfidence(
+    assessment: AssessmentResponse,
+    actionPlan: ActionResponse,
+    followUp: FollowUpResponse
+  ): number {
+    let confidence = 0.5; // Base confidence
+
+    // Factor in risk level alignment
+    if (assessment.riskLevel === 'low') confidence += 0.2;
+    if (assessment.riskLevel === 'medium') confidence += 0.1;
+    if (assessment.riskLevel === 'high') confidence += 0.05;
+
+    // Factor in recommendation completeness
+    if (actionPlan.immediateActions.length >= 3) confidence += 0.1;
+    if (followUp.longTermStrategies.length >= 2) confidence += 0.1;
+
+    // Factor in response quality
+    if (assessment.emotionalAnalysis.primaryEmotions.length > 0) confidence += 0.1;
+    if (assessment.protectiveFactors.length > 0) confidence += 0.05;
+
+    return Math.min(confidence, 1.0);
   }
 
   getAgentStatus(): Record<string, any> {

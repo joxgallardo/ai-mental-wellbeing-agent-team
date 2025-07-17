@@ -46,7 +46,7 @@ export class RolloutController {
       
       logger.info('Starting rollout request', {
         featureKey: validatedData.featureKey,
-        requestedBy: req.user?.id,
+        requestedBy: (req as any).user?.id,
       });
 
       const config: RolloutConfig = {
@@ -92,10 +92,10 @@ export class RolloutController {
       });
 
     } catch (error) {
-      logger.error('Failed to start rollout', { error: error.message, stack: error.stack });
+      logger.error('Failed to start rollout', { error: error instanceof Error ? error instanceof Error ? error.message : String(error) : String(error), stack: error instanceof Error ? error instanceof Error ? error.stack : undefined : undefined });
       res.status(400).json({
         success: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }
@@ -124,7 +124,7 @@ export class RolloutController {
       });
 
     } catch (error) {
-      logger.error('Failed to get rollout status', { error: error.message });
+      logger.error('Failed to get rollout status', { error: error instanceof Error ? error.message : String(error) });
       res.status(500).json({
         success: false,
         error: 'Internal server error',
@@ -147,7 +147,7 @@ export class RolloutController {
       });
 
     } catch (error) {
-      logger.error('Failed to get active rollouts', { error: error.message });
+      logger.error('Failed to get active rollouts', { error: error instanceof Error ? error.message : String(error) });
       res.status(500).json({
         success: false,
         error: 'Internal server error',
@@ -165,7 +165,7 @@ export class RolloutController {
       
       logger.warn('Pausing rollout', {
         featureKey,
-        requestedBy: req.user?.id,
+        requestedBy: (req as any).user?.id,
       });
 
       await featureRolloutService.pauseRollout(featureKey);
@@ -176,10 +176,10 @@ export class RolloutController {
       });
 
     } catch (error) {
-      logger.error('Failed to pause rollout', { error: error.message });
+      logger.error('Failed to pause rollout', { error: error instanceof Error ? error.message : String(error) });
       res.status(400).json({
         success: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }
@@ -194,7 +194,7 @@ export class RolloutController {
       
       logger.info('Resuming rollout', {
         featureKey,
-        requestedBy: req.user?.id,
+        requestedBy: (req as any).user?.id,
       });
 
       await featureRolloutService.resumeRollout(featureKey);
@@ -205,10 +205,10 @@ export class RolloutController {
       });
 
     } catch (error) {
-      logger.error('Failed to resume rollout', { error: error.message });
+      logger.error('Failed to resume rollout', { error: error instanceof Error ? error.message : String(error) });
       res.status(400).json({
         success: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }
@@ -225,7 +225,7 @@ export class RolloutController {
       logger.error('Emergency rollback initiated', {
         featureKey,
         reason,
-        requestedBy: req.user?.id,
+        requestedBy: (req as any).user?.id,
       });
 
       await featureRolloutService.initiateRollback(featureKey, reason || 'Manual emergency rollback');
@@ -236,10 +236,10 @@ export class RolloutController {
       });
 
     } catch (error) {
-      logger.error('Failed to execute emergency rollback', { error: error.message });
+      logger.error('Failed to execute emergency rollback', { error: error instanceof Error ? error.message : String(error) });
       res.status(500).json({
         success: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }
@@ -265,10 +265,10 @@ export class RolloutController {
       });
 
     } catch (error) {
-      logger.error('Failed to record user feedback', { error: error.message });
+      logger.error('Failed to record user feedback', { error: error instanceof Error ? error.message : String(error) });
       res.status(400).json({
         success: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }
@@ -294,10 +294,10 @@ export class RolloutController {
       });
 
     } catch (error) {
-      logger.error('Failed to get A/B test results', { error: error.message });
+      logger.error('Failed to get A/B test results', { error: error instanceof Error ? error.message : String(error) });
       res.status(500).json({
         success: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }
@@ -339,7 +339,7 @@ export class RolloutController {
       });
 
     } catch (error) {
-      logger.error('Failed to get dashboard data', { error: error.message });
+      logger.error('Failed to get dashboard data', { error: error instanceof Error ? error.message : String(error) });
       res.status(500).json({
         success: false,
         error: 'Internal server error',
@@ -354,7 +354,7 @@ export class RolloutController {
   async startRAGRollout(req: Request, res: Response): Promise<void> {
     try {
       logger.info('Starting RAG enhancement rollout', {
-        requestedBy: req.user?.id,
+        requestedBy: (req as any).user?.id,
       });
 
       const ragConfig: RolloutConfig = {
@@ -414,10 +414,10 @@ export class RolloutController {
       });
 
     } catch (error) {
-      logger.error('Failed to start RAG rollout', { error: error.message });
+      logger.error('Failed to start RAG rollout', { error: error instanceof Error ? error.message : String(error) });
       res.status(400).json({
         success: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }

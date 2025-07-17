@@ -48,7 +48,7 @@ class TestEnhancedAgent extends EnhancedBaseAgent {
     );
   }
 
-  async process(input: UserInput, context?: AgentContext): Promise<EnhancedAgentResponse> {
+  override async process(input: UserInput, context?: AgentContext): Promise<EnhancedAgentResponse> {
     return super.process(input, context);
   }
 
@@ -258,7 +258,7 @@ describe('EnhancedBaseAgent', () => {
           id: '1',
           content: 'Test knowledge content',
           similarity: 0.8,
-          document: { title: 'Test Document', category: 'methodologies' },
+          document: { id: 'test-id', title: 'Test Document', category: 'methodologies', author: 'Test Author' },
         },
       ]);
       
@@ -278,7 +278,7 @@ describe('EnhancedBaseAgent', () => {
           id: '1',
           content: 'Test knowledge content',
           similarity: 0.8,
-          document: { title: 'Test Document', category: 'methodologies' },
+          document: { id: 'test-id', title: 'Test Document', category: 'methodologies', author: 'Test Author' },
         },
       ]);
       
@@ -307,13 +307,13 @@ describe('EnhancedBaseAgent', () => {
           id: '1',
           content: 'Methodology content',
           similarity: 0.8,
-          document: { title: 'Test Document', category: 'methodologies' },
+          document: { id: 'test-id', title: 'Test Document', category: 'methodologies', author: 'Test Author' },
         },
         {
           id: '2',
           content: 'Other content',
           similarity: 0.7,
-          document: { title: 'Other Document', category: 'other' },
+          document: { id: 'test-id', title: 'Other Document', category: 'other', author: 'Test Author' },
         },
       ];
       
@@ -389,7 +389,7 @@ describe('EnhancedBaseAgent', () => {
           id: '1',
           content: 'GROW Model is a coaching framework that stands for Goal, Reality, Options, and Will.',
           similarity: 0.9,
-          document: { title: 'GROW Model Guide', category: 'methodologies' },
+          document: { id: 'test-id', title: 'GROW Model Guide', category: 'methodologies', author: 'Test Author' },
         },
       ]);
       
@@ -413,7 +413,7 @@ describe('EnhancedBaseAgent', () => {
           id: '1',
           content: 'Test content',
           similarity: 0.8,
-          document: { title: 'Test Document', category: 'methodologies' },
+          document: { id: 'test-id', title: 'Test Document', category: 'methodologies', author: 'Test Author' },
         },
       ]);
       
@@ -441,7 +441,7 @@ describe('EnhancedBaseAgent', () => {
           id: '1',
           content: 'Test content',
           similarity: 0.8,
-          document: { title: 'Test Document', category: 'methodologies' },
+          document: { id: 'test-id', title: 'Test Document', category: 'methodologies', author: 'Test Author' },
         },
       ]);
       
@@ -466,7 +466,7 @@ describe('EnhancedBaseAgent', () => {
           id: '1',
           content: 'Time management strategies include prioritization and scheduling.',
           similarity: 0.85,
-          document: { title: 'Time Management Guide', category: 'best_practices' },
+          document: { id: 'test-id', title: 'Time Management Guide', category: 'best_practices', author: 'Test Author' },
         },
       ]);
       
@@ -508,7 +508,7 @@ describe('EnhancedBaseAgent', () => {
           id: '1',
           content: 'Test knowledge content',
           similarity: 0.8,
-          document: { title: 'Test Document', category: 'methodologies' },
+          document: { id: 'test-id', title: 'Test Document', category: 'methodologies', author: 'Test Author' },
         },
       ]);
       
@@ -574,7 +574,7 @@ describe('EnhancedBaseAgent', () => {
               id: '1',
               content: 'Test content',
               similarity: 0.8,
-              document: { title: 'Test Document', category: 'methodologies' },
+              document: { id: 'test-id', title: 'Test Document', category: 'methodologies', author: 'Test Author' },
             },
           ]), 100)
         )
@@ -593,13 +593,13 @@ describe('EnhancedBaseAgent', () => {
           id: '1',
           content: 'High quality content',
           similarity: 0.9,
-          document: { title: 'High Quality Document', category: 'methodologies' },
+          document: { id: 'test-id', title: 'High Quality Document', category: 'methodologies', author: 'Test Author' },
         },
         {
           id: '2',
           content: 'Medium quality content',
           similarity: 0.7,
-          document: { title: 'Medium Quality Document', category: 'methodologies' },
+          document: { id: 'test-id', title: 'Medium Quality Document', category: 'methodologies', author: 'Test Author' },
         },
       ]);
       
@@ -778,7 +778,7 @@ describe('EnhancedBaseAgent', () => {
           id: '1',
           content: 'Test content',
           similarity: 0.8,
-          document: { title: 'Test Document', category: 'methodologies' },
+          document: { id: 'test-id', title: 'Test Document', category: 'methodologies', author: 'Test Author' },
         },
       ]);
       

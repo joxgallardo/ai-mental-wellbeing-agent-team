@@ -254,6 +254,13 @@ export class FeatureFlagService {
   }
 
   /**
+   * Set percentage for a feature flag (alias for setRolloutPercentage)
+   */
+  async setPercentage(flagName: string, percentage: number): Promise<void> {
+    return this.setRolloutPercentage(flagName, percentage);
+  }
+
+  /**
    * Get all feature flags
    */
   getFlags(): Record<string, FeatureFlag> {

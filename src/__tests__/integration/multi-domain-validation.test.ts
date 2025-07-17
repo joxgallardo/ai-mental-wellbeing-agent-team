@@ -517,34 +517,40 @@ describe('Multi-Domain Architecture Validation', () => {
           content: 'Career advancement strategies',
           similarity: 0.7,
           metadata: { career_stage: 'mid_level', industry: 'technology' },
+          document: { id: 'doc1', title: 'Career Guide', category: 'career', author: 'Career Expert' },
+          chunk_index: 0,
         },
         {
           id: '2',
           content: 'Communication in relationships',
           similarity: 0.65,
           metadata: { relationship_type: 'romantic', communication_focus: 'emotional_expression' },
+          document: { id: 'doc2', title: 'Relationship Guide', category: 'relationship', author: 'Relationship Expert' },
+          chunk_index: 0,
         },
         {
           id: '3',
           content: 'General life advice',
           similarity: 0.6,
           metadata: {},
+          document: { id: 'doc3', title: 'Life Guide', category: 'general', author: 'Life Coach' },
+          chunk_index: 0,
         },
       ];
 
-      const careerRagContext = { careerStage: 'mid_level', industry: 'technology' };
-      const relationshipRagContext = { relationshipType: 'romantic', communicationFocus: 'emotional_expression' };
+      const careerRagContext = { sessionId: 'test-session', careerStage: 'mid_level', industry: 'technology' };
+      const relationshipRagContext = { sessionId: 'test-session', relationshipType: 'romantic', communicationFocus: 'emotional_expression' };
 
       const careerFiltered = careerAdapter.filterResults([...mockResults], careerRagContext);
       const relationshipFiltered = relationshipAdapter.filterResults([...mockResults], relationshipRagContext);
 
       // Career adapter should boost career-relevant results and filter by higher threshold
       const careerResult = careerFiltered.find(r => r.id === '1');
-      expect(careerResult.similarity).toBeGreaterThan(0.7); // Boosted due to matching metadata
+      expect(careerResult?.similarity).toBeGreaterThan(0.7); // Boosted due to matching metadata
 
       // Relationship adapter should boost relationship-relevant results
       const relationshipResult = relationshipFiltered.find(r => r.id === '2');
-      expect(relationshipResult.similarity).toBeGreaterThan(0.65); // Boosted due to matching metadata
+      expect(relationshipResult?.similarity).toBeGreaterThan(0.65); // Boosted due to matching metadata
 
       // Career adapter filters more strictly (0.65 threshold)
       expect(careerFiltered.length).toBeLessThanOrEqual(relationshipFiltered.length);
@@ -555,13 +561,13 @@ describe('Multi-Domain Architecture Validation', () => {
       const relationshipAdapter = DomainAdapterFactory.getAdapter('relationship_coaching');
 
       const lowSimilarityResults = [
-        { id: '1', content: 'Low relevance content', similarity: 0.5, metadata: {} },
-        { id: '2', content: 'Medium relevance content', similarity: 0.63, metadata: {} },
-        { id: '3', content: 'High relevance content', similarity: 0.8, metadata: {} },
+        { id: '1', content: 'Low relevance content', similarity: 0.5, metadata: {}, document: { id: 'doc1', title: 'Low Doc', category: 'general', author: 'Author' }, chunk_index: 0 },
+        { id: '2', content: 'Medium relevance content', similarity: 0.63, metadata: {}, document: { id: 'doc2', title: 'Medium Doc', category: 'general', author: 'Author' }, chunk_index: 0 },
+        { id: '3', content: 'High relevance content', similarity: 0.8, metadata: {}, document: { id: 'doc3', title: 'High Doc', category: 'general', author: 'Author' }, chunk_index: 0 },
       ];
 
-      const careerFiltered = careerAdapter.filterResults([...lowSimilarityResults], {});
-      const relationshipFiltered = relationshipAdapter.filterResults([...lowSimilarityResults], {});
+      const careerFiltered = careerAdapter.filterResults([...lowSimilarityResults], { sessionId: 'test-session' });
+      const relationshipFiltered = relationshipAdapter.filterResults([...lowSimilarityResults], { sessionId: 'test-session' });
 
       // Career coaching has higher threshold (0.65)
       expect(careerFiltered.length).toBe(1); // Only the 0.8 result passes
@@ -650,7 +656,7 @@ describe('Multi-Domain Architecture Validation', () => {
           id: 'test-result',
           content: 'Test knowledge content',
           similarity: 0.8,
-          document: { title: 'Test Document', category: 'methodologies' },
+          document: { id: 'test-id', title: 'Test Document', category: 'methodologies', author: 'Test Author' },
           metadata: {},
           chunk_index: 0,
         },
@@ -694,7 +700,25 @@ describe('Multi-Domain Architecture Validation', () => {
           confidence: 0.8,
         }),
         filterResults: jest.fn().mockImplementation((results) => results),
-      };
+        config: mockCareerCoachingConfig,
+        logger: { info: jest.fn(), error: jest.fn(), debug: jest.fn() },
+        domainName: 'career_coaching',
+        domainId: 'career_coaching',
+        getKnowledgeCollections: jest.fn().mockReturnValue(['career_coaching_methodologies']),
+        getMetadataSchema: jest.fn().mockReturnValue({}),
+        getRetrievalPreferences: jest.fn().mockReturnValue({}),
+        getPersonalizationSettings: jest.fn().mockReturnValue({}),
+        getFilteringRules: jest.fn().mockReturnValue({}),
+        getEscalationTriggers: jest.fn().mockReturnValue([]),
+        checkEscalationTriggers: jest.fn().mockReturnValue(false),
+        getConfig: jest.fn().mockReturnValue(mockCareerCoachingConfig),
+        getDomainName: jest.fn().mockReturnValue('career_coaching'),
+        getDisplayName: jest.fn().mockReturnValue('Career Coaching'),
+        getDescription: jest.fn().mockReturnValue('Career development coaching'),
+        getMethodologies: jest.fn().mockReturnValue(['GROW Model']),
+        detectLifeArea: jest.fn().mockReturnValue('career'),
+        getRecommendedMethodology: jest.fn().mockReturnValue('Career Anchors Assessment'),
+      } as any;
       
       jest.spyOn(DomainAdapterFactory, 'getAdapter').mockReturnValue(mockDomainAdapter);
 
@@ -793,7 +817,7 @@ describe('Multi-Domain Architecture Validation', () => {
       const domains = ['career_coaching', 'relationship_coaching', 'health_coaching', 'financial_coaching'];
       
       domains.forEach(domain => {
-        DomainAdapterFactory.registerAdapter(domain, () => new LifeCoachingAdapter(domain));
+        DomainAdapterFactory.registerAdapter(domain, LifeCoachingAdapter);
       });
 
       // Test concurrent access to different domains
@@ -835,7 +859,7 @@ describe('Multi-Domain Architecture Validation', () => {
 
 // Export utility functions for domain testing
 export function createDomainTestInput(domain: string, overrides: Partial<UserInput> = {}): UserInput {
-  const domainSpecificInputs = {
+  const domainSpecificInputs: Record<string, any> = {
     career_coaching: {
       mentalState: 'I need help with career advancement and professional development',
       currentSymptoms: ['work stress', 'career uncertainty'],

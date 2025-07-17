@@ -1229,14 +1229,14 @@ export function getAllCategories(): string[] {
  * Get all available methodologies
  */
 export function getAllMethodologies(): string[] {
-  return [...new Set(lifeCoachingKnowledgeBase.map(doc => doc.methodology).filter(Boolean))];
+  return [...new Set(lifeCoachingKnowledgeBase.map(doc => doc.methodology).filter(Boolean))] as string[];
 }
 
 /**
  * Get all available life areas
  */
 export function getAllLifeAreas(): string[] {
-  return [...new Set(lifeCoachingKnowledgeBase.map(doc => doc.life_area).filter(Boolean))];
+  return [...new Set(lifeCoachingKnowledgeBase.map(doc => doc.life_area).filter(Boolean))] as string[];
 }
 
 /**

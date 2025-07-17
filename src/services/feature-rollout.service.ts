@@ -154,7 +154,7 @@ export class FeatureRolloutService {
         status.status = 'paused';
         
         if (healthCheck.shouldRollback) {
-          await this.initiateRollback(config.featureKey, healthCheck.reason);
+          await this.initiateRollback(config.featureKey, healthCheck.reason || 'Health check failed');
         }
       }
     }, config.incrementInterval * 60 * 1000);

@@ -507,7 +507,7 @@ Therefore, the combination of clear goals and actionable plans leads to success.
         await processor.processDocument('', 'content', sampleMetadata);
       } catch (error) {
         expect(error).toBeInstanceOf(RAGError);
-        expect(error.message).toContain('Document ID');
+        expect(error instanceof Error ? error.message : String(error)).toContain('Document ID');
       }
     });
   });

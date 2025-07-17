@@ -8,11 +8,10 @@ export class ActionAgent extends EnhancedBaseAgent {
       'action_agent',
       'Crisis Intervention and Resource Specialist',
       agentSystemMessages.action,
-      { 
+            {
         ragEnabled: true, 
         hybridSearchEnabled: true,
-        focusArea: 'intervention',
-        domainSpecific: true 
+        focusArea: 'action'
       }
     );
   }
@@ -118,7 +117,7 @@ export class ActionAgent extends EnhancedBaseAgent {
     return 'low';
   }
 
-  async process(input: UserInput, context?: AgentContext): Promise<ActionResponse> {
+  override async process(input: UserInput, context?: AgentContext): Promise<ActionResponse> {
     this.logger.info('Starting action plan generation', {
       sessionId: context?.sessionId,
     });

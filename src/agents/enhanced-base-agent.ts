@@ -30,11 +30,23 @@ export interface RAGContext {
 export interface EnhancedAgentResponse extends AgentResponse {
   ragMetadata?: {
     useRag: boolean;
-    searchResults?: number;
-    retrievalTime?: number;
+    queryEnhanced?: boolean;
+    knowledgeUsed?: boolean;
+    domainSpecific?: boolean;
+    contextualFactors?: string[];
     qualityScore?: number;
-    sources?: string[];
+    sources?: any[];
     fallbackReason?: string;
+    searchResults?: any[];
+    retrievalTime?: number;
+    agentVersions?: Record<string, string>;
+    ragQuality?: {
+      relevance: number;
+      completeness: number;
+      accuracy: number;
+      threshold: number;
+    };
+    threshold?: number;
   };
 }
 
@@ -66,6 +78,7 @@ export abstract class EnhancedBaseAgent extends BaseAgent {
       ragEnabled?: boolean;
       hybridSearchEnabled?: boolean;
       performanceMonitoring?: boolean;
+      focusArea?: string;
     } = {}
   ) {
     super(name, role, systemMessage);
@@ -89,7 +102,7 @@ export abstract class EnhancedBaseAgent extends BaseAgent {
     const startTime = Date.now();
     let ragMetadata: EnhancedAgentResponse['ragMetadata'] = {
       useRag: false,
-      searchResults: 0,
+      searchResults: [],
       retrievalTime: 0,
       qualityScore: 0,
       sources: [],
@@ -115,11 +128,13 @@ export abstract class EnhancedBaseAgent extends BaseAgent {
         this.ragLogger.info('Processing without RAG (disabled or fallback)', {
           agentName: this.name,
           sessionId: context?.sessionId,
-          reason: ragMetadata.fallbackReason || 'RAG disabled',
+          reason: ragMetadata?.fallbackReason || 'RAG disabled',
         });
         
         const standardResponse = await this.processStandard(input, context);
-        ragMetadata.fallbackReason = 'RAG disabled or not available';
+        if (ragMetadata) {
+          ragMetadata.fallbackReason = 'RAG disabled or not available';
+        }
         
         return {
           ...standardResponse,
@@ -135,7 +150,9 @@ export abstract class EnhancedBaseAgent extends BaseAgent {
 
       // Fallback to standard processing
       const fallbackResponse = await this.processStandard(input, context);
-      ragMetadata.fallbackReason = `Error in RAG processing: ${error}`;
+      if (ragMetadata) {
+        ragMetadata.fallbackReason = `Error in RAG processing: ${error}`;
+      }
       
       return {
         ...fallbackResponse,
@@ -209,7 +226,7 @@ export abstract class EnhancedBaseAgent extends BaseAgent {
         ...agentResponse,
         ragMetadata: {
           useRag: true,
-          searchResults: knowledgeResults.results.length,
+          searchResults: knowledgeResults.results || [],
           retrievalTime,
           qualityScore: knowledgeResults.qualityScore,
           sources,
@@ -664,7 +681,7 @@ export abstract class EnhancedBaseAgent extends BaseAgent {
       retrievalLatency: ragMetadata.retrievalTime || 0,
       contextEnhancementTime: 0, // Would be calculated if we tracked this
       totalProcessingTime: 0, // Would be calculated if we tracked this
-      searchResultsCount: ragMetadata.searchResults || 0,
+      searchResultsCount: ragMetadata.searchResults?.length || 0,
       relevanceScore: ragMetadata.qualityScore || 0,
       cacheHitRate: 0, // Would be calculated if we implemented caching
     };

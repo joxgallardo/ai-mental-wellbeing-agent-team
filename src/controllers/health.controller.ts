@@ -127,7 +127,7 @@ export class HealthController {
       }
 
     } catch (error) {
-      logger.error('Liveness check failed', { error: error.message });
+      logger.error('Liveness check failed', { error: error instanceof Error ? error.message : String(error) });
       res.status(503).json({
         status: 'unhealthy',
         timestamp: new Date().toISOString(),
@@ -166,7 +166,7 @@ export class HealthController {
       });
 
     } catch (error) {
-      logger.error('Detailed health check failed', { error: error.message });
+      logger.error('Detailed health check failed', { error: error instanceof Error ? error.message : String(error) });
       res.status(503).json({
         status: 'unhealthy',
         timestamp: new Date().toISOString(),
@@ -189,7 +189,7 @@ export class HealthController {
       });
 
     } catch (error) {
-      logger.error('Metrics collection failed', { error: error.message });
+      logger.error('Metrics collection failed', { error: error instanceof Error ? error.message : String(error) });
       res.status(500).json({
         timestamp: new Date().toISOString(),
         error: 'Metrics collection unavailable',
@@ -227,7 +227,7 @@ export class HealthController {
     } catch (error) {
       logger.error('Component health check failed', { 
         component: req.params.component,
-        error: error.message 
+        error: error instanceof Error ? error.message : String(error) 
       });
       res.status(503).json({
         component: req.params.component,
@@ -280,7 +280,7 @@ export class HealthController {
       res.status(statusCode).json(summary);
 
     } catch (error) {
-      logger.error('Health summary failed', { error: error.message });
+      logger.error('Health summary failed', { error: error instanceof Error ? error.message : String(error) });
       res.status(503).json({
         overall: 'unhealthy',
         timestamp: new Date().toISOString(),
@@ -303,10 +303,10 @@ export class HealthController {
       });
 
     } catch (error) {
-      logger.error('Cache clear failed', { error: error.message });
+      logger.error('Cache clear failed', { error: error instanceof Error ? error.message : String(error) });
       res.status(500).json({
-        error: 'Failed to clear health check cache',
-        timestamp: new Date().toISOString(),
+        message: 'Failed to clear cache',
+        error: error instanceof Error ? error.message : String(error)
       });
     }
   }
@@ -351,10 +351,10 @@ export class HealthController {
       res.status(200).json(config);
 
     } catch (error) {
-      logger.error('Health config request failed', { error: error.message });
+      logger.error('Health config request failed', { error: error instanceof Error ? error.message : String(error) });
       res.status(500).json({
-        error: 'Failed to retrieve health check configuration',
-        timestamp: new Date().toISOString(),
+        message: 'Failed to get health config',
+        error: error instanceof Error ? error.message : String(error)
       });
     }
   }

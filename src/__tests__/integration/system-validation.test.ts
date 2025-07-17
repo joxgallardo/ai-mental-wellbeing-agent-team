@@ -1,4 +1,4 @@
-import { AgentCoordinator } from '../../services/agent-coordinator.service';
+import { agentCoordinator } from '../../services/agent-coordinator.service';
 import { EnhancedBaseAgent } from '../../agents/enhanced-base-agent';
 import { UserInput, AgentContext, AgentResponse } from '../../types/index';
 import { ragFoundationService } from '../../services/rag/rag-foundation.service';
@@ -183,19 +183,19 @@ describe('System Integration Validation', () => {
         private followUpAgent = new EnhancedFollowUpAgent();
 
         async coordinateSession(input: UserInput, _context: AgentContext) {
-          const sessionId = context.sessionId;
+          const sessionId = _context.sessionId;
           
           // Process with each agent in sequence (existing pattern)
-          const assessment = await this.assessmentAgent.process(input, context);
+          const assessment = await this.assessmentAgent.process(input, _context);
           
           const actionContext = {
-            ...context,
+            ..._context,
             previousResponses: [assessment],
           };
           const action = await this.actionAgent.process(input, actionContext);
           
           const followUpContext = {
-            ...context,
+            ..._context,
             previousResponses: [assessment, action],
           };
           const followUp = await this.followUpAgent.process(input, followUpContext);
@@ -312,7 +312,7 @@ describe('System Integration Validation', () => {
           id: 'assessment-1',
           content: 'Assessment content',
           similarity: 0.8,
-          document: { title: 'Assessment Guide', category: 'assessment_tools' },
+          document: { id: 'test-id', title: 'Assessment Guide', category: 'assessment_tools', author: 'Test Author' },
           metadata: {},
           chunk_index: 0,
         },
@@ -323,7 +323,7 @@ describe('System Integration Validation', () => {
           id: 'action-1',
           content: 'GROW Model action planning content',
           similarity: 0.85,
-          document: { title: 'GROW Model Guide', category: 'methodologies' },
+          document: { id: 'test-id', title: 'GROW Model Guide', category: 'methodologies', author: 'Test Author' },
           metadata: {},
           chunk_index: 0,
         },
@@ -334,7 +334,7 @@ describe('System Integration Validation', () => {
           id: 'followup-1',
           content: 'Long-term support strategies content',
           similarity: 0.82,
-          document: { title: 'Support Strategies', category: 'best_practices' },
+          document: { id: 'test-id', title: 'Support Strategies', category: 'best_practices', author: 'Test Author' },
           metadata: {},
           chunk_index: 0,
         },
@@ -443,7 +443,7 @@ describe('System Integration Validation', () => {
               id: 'test-1',
               content: 'Test content',
               similarity: 0.8,
-              document: { title: 'Test Doc', category: 'methodologies' },
+              document: { id: 'test-id', title: 'Test Doc', category: 'methodologies', author: 'Test Author' },
               metadata: {},
               chunk_index: 0,
             },
@@ -490,7 +490,7 @@ describe('System Integration Validation', () => {
           id: 'concurrent-test',
           content: 'Concurrent test content',
           similarity: 0.8,
-          document: { title: 'Test Doc', category: 'methodologies' },
+          document: { id: 'test-id', title: 'Test Doc', category: 'methodologies', author: 'Test Author' },
           metadata: {},
           chunk_index: 0,
         },
@@ -578,7 +578,7 @@ describe('System Integration Validation', () => {
             id: 'health-check',
             content: 'Health check content',
             similarity: 0.8,
-            document: { title: 'Health Check', category: 'methodologies' },
+            document: { id: 'test-id', title: 'Health Check', category: 'methodologies', author: 'Test Author' },
             metadata: {},
             chunk_index: 0,
           },

@@ -47,9 +47,11 @@ export abstract class BaseDomainAdapter {
   protected config: DomainConfig;
   protected logger = createLogger('DomainAdapter');
   protected domainName: string;
+  public readonly domainId: string;
 
   constructor(domainName: string) {
     this.domainName = domainName;
+    this.domainId = domainName;
     this.config = this.loadDomainConfig(domainName);
     this.validateConfig();
     

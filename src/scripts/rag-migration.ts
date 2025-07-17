@@ -69,7 +69,7 @@ class RAGMigrationService {
       this.logMigrationSummary();
 
     } catch (error) {
-      logger.error('❌ RAG migration failed', { error: error.message });
+      logger.error('❌ RAG migration failed', { error: error instanceof Error ? error.message : String(error) });
       await this.executeRollback();
       throw error;
     }
@@ -91,9 +91,9 @@ class RAGMigrationService {
       logger.info(`✅ Completed step: ${stepName}`);
     } catch (error) {
       migrationStatus.status = 'failed';
-      migrationStatus.details = error.message;
+      migrationStatus.details = error instanceof Error ? error.message : String(error);
       migrationStatus.rollbackRequired = true;
-      logger.error(`❌ Failed step: ${stepName}`, { error: error.message });
+      logger.error(`❌ Failed step: ${stepName}`, { error: error instanceof Error ? error.message : String(error) });
       throw error;
     }
   }
@@ -158,6 +158,7 @@ class RAGMigrationService {
     // Test knowledge base search
     try {
       const searchResults = await ragFoundationService.hybridSearch(
+        'life_coaching',
         'stress management techniques',
         { limit: 3, threshold: 0.7 }
       );
@@ -168,7 +169,7 @@ class RAGMigrationService {
       
       logger.info(`✅ Knowledge base search working - ${searchResults.length} results found`);
     } catch (error) {
-      throw new Error(`Knowledge base search failed: ${error.message}`);
+      throw new Error(`Knowledge base search failed: ${error instanceof Error ? error.message : String(error)}`);
     }
 
     // Test domain adapter system
@@ -182,7 +183,7 @@ class RAGMigrationService {
       
       logger.info('✅ Domain adapter system working');
     } catch (error) {
-      throw new Error(`Domain adapter validation failed: ${error.message}`);
+      throw new Error(`Domain adapter validation failed: ${error instanceof Error ? error.message : String(error)}`);
     }
 
     logger.info('✅ RAG infrastructure validated');
@@ -395,7 +396,7 @@ class RAGMigrationService {
       try {
         await rollbackStep();
       } catch (error) {
-        logger.error('❌ Rollback step failed', { error: error.message });
+        logger.error('❌ Rollback step failed', { error: error instanceof Error ? error.message : String(error) });
       }
     }
 
@@ -424,7 +425,7 @@ async function main(): Promise<void> {
     await migration.executeMigration();
     process.exit(0);
   } catch (error) {
-    logger.error('Migration failed', { error: error.message });
+    logger.error('Migration failed', { error: error instanceof Error ? error.message : String(error) });
     process.exit(1);
   }
 }

@@ -2,11 +2,7 @@ export default {
   preset: 'ts-jest',
   testEnvironment: 'node',
   extensionsToTreatAsEsm: ['.ts'],
-  globals: {
-    'ts-jest': {
-      useESM: true,
-    },
-  },
+  // globals config is deprecated, moved to transform options
   roots: ['<rootDir>/src', '<rootDir>/tests'],
   testMatch: [
     '**/__tests__/**/*.ts',
@@ -18,6 +14,9 @@ export default {
       tsconfig: 'tsconfig.json',
     }],
   },
+  transformIgnorePatterns: [
+    'node_modules/(?!(@xenova/transformers|@supabase/supabase-js)/)',
+  ],
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.d.ts',
@@ -35,6 +34,9 @@ export default {
   resetMocks: true,
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '^../src/utils/logger$': '<rootDir>/src/utils/logger',
+    '^../../src/utils/logger$': '<rootDir>/src/utils/logger',
+    '^../../../src/utils/logger$': '<rootDir>/src/utils/logger',
   },
   moduleFileExtensions: ['ts', 'js', 'json'],
   resolver: undefined,

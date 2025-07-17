@@ -18,7 +18,8 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'fs';
-import { join } from 'path';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { supabaseConfig } from '../src/config/index';
 import { createLogger } from '../src/utils/logger';
 
@@ -431,8 +432,11 @@ async function main() {
   }
 }
 
-// Run if called directly
-if (require.main === module) {
+// Run if called directly (ESM compatible)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+if (process.argv[1] === __filename) {
   main();
 }
 

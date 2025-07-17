@@ -22,7 +22,7 @@ export interface Agent {
 
 export interface AgentContext {
   previousResponses?: AgentResponse[];
-  userInput: UserInput;
+  userInput?: UserInput;
   sessionId: string;
   userId?: string;
   metadata?: Record<string, any>;
@@ -30,6 +30,10 @@ export interface AgentContext {
     domain: string;
     relevantDocuments: any[];
     searchQuery: string;
+    domainId?: string;
+    sessionHistory?: any[];
+    assessmentInsights?: any;
+    recoveryStage?: string;
   };
 }
 
@@ -47,6 +51,18 @@ export interface AgentResponse {
     domainSpecific?: boolean;
     contextualFactors?: string[];
     qualityScore?: number;
+    sources?: any[];
+    fallbackReason?: string;
+    searchResults?: any[];
+    retrievalTime?: number;
+    agentVersions?: Record<string, string>;
+    ragQuality?: {
+      relevance: number;
+      completeness: number;
+      accuracy: number;
+      threshold: number;
+    };
+    threshold?: number;
   };
 }
 
@@ -158,5 +174,13 @@ export interface MentalHealthPlan {
     complexity: string;
     domain: string;
     confidence: number;
+    ragEnabled?: boolean;
+    agentVersions?: Record<string, string>;
+    ragQuality?: {
+      relevance: number;
+      completeness: number;
+      accuracy: number;
+      threshold: number;
+    };
   };
 } 

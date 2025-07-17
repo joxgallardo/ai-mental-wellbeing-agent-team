@@ -18,9 +18,9 @@ import { SearchResult } from '../../types/database';
  * - GROW Model and other coaching framework integration
  */
 export class LifeCoachingAdapter extends BaseDomainAdapter {
-  private lifeAreaKeywords: Record<string, string[]>;
-  private methodologyKeywords: Record<string, string[]>;
-  private goalKeywords: Record<string, string[]>;
+  private lifeAreaKeywords: Record<string, string[]> = {};
+  private methodologyKeywords: Record<string, string[]> = {};
+  private goalKeywords: Record<string, string[]> = {};
 
   constructor() {
     super('life_coaching');

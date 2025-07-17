@@ -138,8 +138,8 @@ export class KnowledgePopulationService {
     
     // Initialize Supabase client
     this.supabase = createClient<Database>(
-      supabaseConfig.url,
-      supabaseConfig.serviceKey,
+      supabaseConfig.url!,
+      supabaseConfig.serviceKey!,
       {
         auth: { persistSession: false },
         global: {
@@ -248,7 +248,7 @@ export class KnowledgePopulationService {
         } catch (error) {
           this.logger.error('Batch processing failed', {
             batchIndex,
-            error: error instanceof Error ? error.message : 'Unknown error',
+            error: error instanceof Error ? error instanceof Error ? error.message : String(error) : 'Unknown error',
           });
           
           errors.push({
@@ -335,7 +335,7 @@ export class KnowledgePopulationService {
       this.logger.error('Knowledge population failed', {
         domainId,
         processingTime,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error instanceof Error ? error.message : String(error) : 'Unknown error',
       });
 
       throw new RAGError(
@@ -983,15 +983,17 @@ export class KnowledgePopulationService {
   async clearDomainKnowledge(domainId: string): Promise<void> {
     try {
       // Delete embeddings first (due to foreign key constraints)
-      await this.supabase
-        .from('document_embeddings')
-        .delete()
-        .in('document_id', 
-          this.supabase
-            .from('documents')
-            .select('id')
-            .eq('domain_id', domainId)
-        );
+      const { data: documentIds } = await this.supabase
+        .from('documents')
+        .select('id')
+        .eq('domain_id', domainId);
+      
+      if (documentIds && documentIds.length > 0) {
+        await this.supabase
+          .from('document_embeddings')
+          .delete()
+          .in('document_id', documentIds.map(doc => doc.id));
+      }
 
       // Delete documents
       await this.supabase

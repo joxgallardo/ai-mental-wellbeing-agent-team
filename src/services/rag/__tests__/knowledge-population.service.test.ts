@@ -1,3 +1,14 @@
+// Mock logger first to ensure it's hoisted
+jest.mock('../../../utils/logger', () => ({
+  createLogger: jest.fn(() => ({
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+    log: jest.fn(),
+  })),
+}));
+
 import { KnowledgePopulationService, KnowledgeDocument, PopulationOptions } from '../knowledge-population.service';
 import { RAGError } from '../../../types/database';
 
@@ -121,10 +132,31 @@ describe('KnowledgePopulationService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new KnowledgePopulationService();
     
+    // Create a proper mock Supabase client
+    mockSupabase = {
+      from: jest.fn(() => ({
+        select: jest.fn(() => ({
+          eq: jest.fn(() => ({
+            single: jest.fn(() => Promise.resolve({ data: null, error: null })),
+            data: [],
+            error: null,
+          })),
+          data: [],
+          error: null,
+        })),
+        insert: jest.fn(() => Promise.resolve({ data: null, error: null })),
+        update: jest.fn(() => Promise.resolve({ data: null, error: null })),
+        delete: jest.fn(() => Promise.resolve({ data: null, error: null })),
+        upsert: jest.fn(() => Promise.resolve({ data: null, error: null })),
+      })),
+    };
+    
+    // Mock the createClient function to return our mock
     const { createClient } = require('@supabase/supabase-js');
-    mockSupabase = createClient();
+    createClient.mockReturnValue(mockSupabase);
+    
+    service = new KnowledgePopulationService();
   });
 
   describe('Constructor', () => {
@@ -213,16 +245,18 @@ describe('KnowledgePopulationService', () => {
     });
 
     it('should handle domain validation failure', async () => {
-      mockSupabase.from.mockReturnValueOnce({
-        select: jest.fn().mockReturnValueOnce({
-          eq: jest.fn().mockReturnValueOnce({
-            single: jest.fn().mockResolvedValueOnce({
+      const mockFrom = jest.fn(() => ({
+        select: jest.fn(() => ({
+          eq: jest.fn(() => ({
+            single: jest.fn(() => Promise.resolve({
               data: null,
               error: { message: 'Domain not found' },
-            }),
-          }),
-        }),
-      });
+            })),
+          })),
+        })),
+      }));
+      
+      mockSupabase.from = mockFrom;
 
       await expect(
         service.populateKnowledge('invalid-domain', sampleDocuments)
@@ -326,14 +360,16 @@ describe('KnowledgePopulationService', () => {
 
     it('should skip existing documents when enabled', async () => {
       // Mock existing documents
-      mockSupabase.from.mockReturnValueOnce({
-        select: jest.fn().mockReturnValueOnce({
-          eq: jest.fn().mockReturnValueOnce({
+      const mockFrom = jest.fn(() => ({
+        select: jest.fn(() => ({
+          eq: jest.fn(() => ({
             data: [{ title: 'Goal Setting Fundamentals' }],
             error: null,
-          }),
-        }),
-      });
+          })),
+        })),
+      }));
+      
+      mockSupabase.from = mockFrom;
 
       const result = await service.populateKnowledge('test-domain', sampleDocuments, {
         skipExisting: true,
@@ -481,28 +517,29 @@ describe('KnowledgePopulationService', () => {
     });
 
     it('should handle storage failures', async () => {
-      mockSupabase.from.mockReturnValueOnce({
-        select: jest.fn().mockReturnValueOnce({
-          eq: jest.fn().mockReturnValueOnce({
-            single: jest.fn().mockResolvedValueOnce({
-              data: { id: 'test-domain' },
-              error: null,
-            }),
-          }),
-        }),
-      });
-
-      // Mock document insertion failure
-      mockSupabase.from.mockReturnValueOnce({
-        insert: jest.fn().mockReturnValueOnce({
-          select: jest.fn().mockReturnValueOnce({
-            single: jest.fn().mockResolvedValueOnce({
-              data: null,
-              error: { message: 'Storage failed' },
-            }),
-          }),
-        }),
-      });
+      const mockFrom = jest.fn()
+        .mockReturnValueOnce({
+          select: jest.fn(() => ({
+            eq: jest.fn(() => ({
+              single: jest.fn(() => Promise.resolve({
+                data: { id: 'test-domain' },
+                error: null,
+              })),
+            })),
+          })),
+        })
+        .mockReturnValueOnce({
+          insert: jest.fn(() => ({
+            select: jest.fn(() => ({
+              single: jest.fn(() => Promise.resolve({
+                data: null,
+                error: { message: 'Storage failed' },
+              })),
+            })),
+          })),
+        });
+      
+      mockSupabase.from = mockFrom;
       
       const result = await service.populateKnowledge('test-domain', [sampleDocuments[0]]);
       
@@ -551,10 +588,10 @@ describe('KnowledgePopulationService', () => {
 
   describe('Domain Statistics', () => {
     it('should get domain statistics', async () => {
-      mockSupabase.from.mockReturnValueOnce({
-        select: jest.fn().mockReturnValueOnce({
-          eq: jest.fn().mockReturnValueOnce({
-            single: jest.fn().mockResolvedValueOnce({
+      const mockFrom = jest.fn(() => ({
+        select: jest.fn(() => ({
+          eq: jest.fn(() => ({
+            single: jest.fn(() => Promise.resolve({
               data: {
                 domain_id: 'test-domain',
                 total_documents: 10,
@@ -568,10 +605,12 @@ describe('KnowledgePopulationService', () => {
                 last_updated: '2024-01-01T00:00:00Z',
               },
               error: null,
-            }),
-          }),
-        }),
-      });
+            })),
+          })),
+        })),
+      }));
+      
+      mockSupabase.from = mockFrom;
       
       const stats = await service.getPopulationStats('test-domain');
       
@@ -584,16 +623,18 @@ describe('KnowledgePopulationService', () => {
     });
 
     it('should handle missing domain stats', async () => {
-      mockSupabase.from.mockReturnValueOnce({
-        select: jest.fn().mockReturnValueOnce({
-          eq: jest.fn().mockReturnValueOnce({
-            single: jest.fn().mockResolvedValueOnce({
+      const mockFrom = jest.fn(() => ({
+        select: jest.fn(() => ({
+          eq: jest.fn(() => ({
+            single: jest.fn(() => Promise.resolve({
               data: null,
               error: { message: 'Not found' },
-            }),
-          }),
-        }),
-      });
+            })),
+          })),
+        })),
+      }));
+      
+      mockSupabase.from = mockFrom;
       
       const stats = await service.getPopulationStats('test-domain');
       
@@ -615,13 +656,15 @@ describe('KnowledgePopulationService', () => {
     });
 
     it('should handle clear knowledge errors', async () => {
-      mockSupabase.from.mockReturnValueOnce({
-        delete: jest.fn().mockReturnValueOnce({
-          in: jest.fn().mockResolvedValueOnce({
+      const mockFrom = jest.fn(() => ({
+        delete: jest.fn(() => ({
+          in: jest.fn(() => Promise.resolve({
             error: { message: 'Delete failed' },
-          }),
-        }),
-      });
+          })),
+        })),
+      }));
+      
+      mockSupabase.from = mockFrom;
       
       await expect(service.clearDomainKnowledge('test-domain')).rejects.toThrow();
     });
@@ -636,22 +679,24 @@ describe('KnowledgePopulationService', () => {
     });
 
     it('should provide detailed error information', async () => {
-      mockSupabase.from.mockReturnValueOnce({
-        select: jest.fn().mockReturnValueOnce({
-          eq: jest.fn().mockReturnValueOnce({
-            single: jest.fn().mockResolvedValueOnce({
+      const mockFrom = jest.fn(() => ({
+        select: jest.fn(() => ({
+          eq: jest.fn(() => ({
+            single: jest.fn(() => Promise.resolve({
               data: null,
               error: { message: 'Domain not found' },
-            }),
-          }),
-        }),
-      });
+            })),
+          })),
+        })),
+      }));
+      
+      mockSupabase.from = mockFrom;
 
       try {
         await service.populateKnowledge('invalid-domain', sampleDocuments);
       } catch (error) {
         expect(error).toBeInstanceOf(RAGError);
-        expect(error.message).toContain('Domain not found');
+        expect(error instanceof Error ? error.message : String(error)).toContain('Domain not found');
       }
     });
   });

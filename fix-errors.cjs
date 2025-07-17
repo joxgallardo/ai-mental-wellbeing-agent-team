@@ -1,8 +1,8 @@
-import * as fs from 'fs';
-import * as path from 'path';
+const fs = require('fs');
+const path = require('path');
 
 // Función para corregir errores de manejo de errores
-function fixErrorHandling(content: string): string {
+function fixErrorHandling(content) {
   // Corregir error.message con tipo 'unknown'
   content = content.replace(
     /error\.message/g,
@@ -19,7 +19,7 @@ function fixErrorHandling(content: string): string {
 }
 
 // Función para corregir tipos de SearchResult en tests
-function fixSearchResultTypes(content: string): string {
+function fixSearchResultTypes(content) {
   // Corregir documentos sin id y author
   content = content.replace(
     /document: \{ title: '([^']+)', category: '([^']+)' \}/g,
@@ -30,7 +30,7 @@ function fixSearchResultTypes(content: string): string {
 }
 
 // Función para corregir imports incorrectos
-function fixImports(content: string): string {
+function fixImports(content) {
   // Corregir AgentCoordinator vs agentCoordinator
   content = content.replace(
     /import \{ AgentCoordinator \} from ['"]\.\.\/\.\.\/services\/agent-coordinator\.service['"];?/g,
@@ -46,7 +46,7 @@ function fixImports(content: string): string {
 }
 
 // Función para corregir propiedades faltantes en agentes
-function fixAgentProperties(content: string): string {
+function fixAgentProperties(content) {
   // Corregir domainSpecific por focusArea
   content = content.replace(
     /domainSpecific: true/g,
@@ -57,7 +57,7 @@ function fixAgentProperties(content: string): string {
 }
 
 // Función principal para procesar archivos
-function processFile(filePath: string): void {
+function processFile(filePath) {
   try {
     let content = fs.readFileSync(filePath, 'utf8');
     const originalContent = content;
